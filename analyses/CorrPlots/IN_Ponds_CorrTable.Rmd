@@ -1,0 +1,399 @@
+---
+title: "Univariate relationships in IN Ponds data"
+geometry: margin=2.54cm
+output: pdf_document
+header-includes: \usepackage{array}
+---
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+# Retrieve and set the working directory
+rm(list=ls())
+getwd()
+setwd("~/GitHub/DistDecay")
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+cor.mtest <- function(mat, conf.level = 0.95){
+  mat <- as.matrix(mat)
+    n <- ncol(mat)
+    p.mat <- lowCI.mat <- uppCI.mat <- matrix(NA, n, n)
+    diag(p.mat) <- 0
+    diag(lowCI.mat) <- diag(uppCI.mat) <- 1
+    for(i in 1:(n-1)){
+        for(j in (i+1):n){
+            tmp <- cor.test(mat[,i], mat[,j], conf.level = conf.level)
+            p.mat[i,j] <- p.mat[j,i] <- tmp$p.value
+            lowCI.mat[i,j] <- lowCI.mat[j,i] <- tmp$conf.int[1]
+            uppCI.mat[i,j] <- uppCI.mat[j,i] <- tmp$conf.int[2]
+        }
+    }
+    return(list(p.mat, lowCI.mat, uppCI.mat))
+}
+```
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+# Load packages
+require("simba")
+require("fossil")
+require("corrplot")
+require("cowplot")
+load(file = "~/GitHub/DistDecay/data/MicrobialCommunity/INPond_Initial.RData")
+
+# Functions to calculate Anne Chao's richness metric
+S.obs <- function(x = ""){length(x[x > 0])}
+S.chao1 <- function(x = ""){S.obs(x) + (sum(x == 1)^2) / (2 * sum(x == 2))}
+
+# Select DNA Data: Use the `grep()` Command and Rename with `gsub()`
+# The active portion, based on cDNA
+act.com <- Pond97[grep("*-cDNA", rownames(Pond97)), ]
+rownames(act.com) <- gsub("\\-cDNA", "", rownames(act.com))
+
+# The community without respect to active or not, 16S rRNA gene sequences
+all.com <- Pond97[grep("*-DNA", rownames(Pond97)), ]
+rownames(all.com) <- gsub("\\-DNA", "", rownames(all.com))
+
+# Remove Zero-Occurrence Taxa
+act.com <- act.com[ , colSums(act.com) > 0]
+all.com <- all.com[ , colSums(all.com) > 0]
+all.com <- all.com[rownames(all.com)  %in% row.names(act.com),]
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
+
+plot.new()
+par(mfrow=c(2, 2))
+
+N.act <- log10(rowSums(act.com))
+N.all <- log10(rowSums(all.com))
+
+S.act <- log10(rowSums(act.com > 0))
+S.all <- log10(rowSums(all.com > 0))
+
+S.chao.act <- log10(apply(act.com, 1, S.chao1))
+S.chao.all <- log10(apply(all.com, 1, S.chao1))
+
+plot(N.all, N.act, xlab="N.all", ylab="N.active")
+abline(lm(N.act ~ N.all))
+  
+plot(S.all, S.act, xlab="S.all", ylab="S.active")
+abline(lm(S.act ~ S.all))
+
+plot(N.all, S.all, xlab="N.all", ylab="S.all")
+abline(lm(S.all ~ N.all))
+
+plot(N.act, S.act, xlab="N.active", ylab="S.active")
+abline(lm(S.act ~ N.act))
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+# Load Environmental and Geographical data
+env <- read.table("~/GitHub/DistDecay/data/Environmental/20130801_PondDataMod.csv", 
+                  sep = ",", header = TRUE)
+env <- env[complete.cases(env),]
+env[which(env$Sample_ID == "HNF133"), ]["SpC"] <- 55
+env$chla <- log10(env$chla)
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+plot.new()
+par(mfrow=c(1, 1))
+env.sub <- within(env, rm("Location", "Sample_ID", "lat", "long", "Elevation", "Diameter", "Cal_Volume"))
+M <- cor(env.sub)
+res1 <- cor.mtest(env.sub, 0.95)
+corrplot(M, method="number", order="hclust", p.mat = res1[[1]], insig = "blank")
+```
+
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+# Load Flow Cytometry Data
+flo <- read.table("~/GitHub/DistDecay/data/FlowCytometry/INPonds_flowdat.csv", 
+                  sep = ",", header = TRUE)
+flo <- flo[complete.cases(flo),]
+
+levels(flo$pond) <- sub("_", "", levels(flo$pond))
+levels(flo$pond) <- sub("BCSP", "BC", levels(flo$pond))
+flo <- within(flo, rm("sample"))
+
+N.tot <- log10(flo$N.totdens)
+N.liv <- log10(flo$N.livedens)
+N.ded <- log10(flo$N.deaddens)
+rna <- log10(flo$meanRNA)
+dna <- log10(flo$meanDNA)
+rna.dna  <- log10(flo$mean.RNADNA)
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
+
+par(mfrow=c(2, 2))
+
+plot(N.liv, rna, xlab="Density of live cells, log10", ylab="RNA")
+abline(lm(rna ~ N.liv))
+  
+plot(N.liv, dna, xlab="Density of live cells, log10", ylab="DNA")
+abline(lm(dna ~ N.liv))
+
+plot(N.liv, rna.dna, xlab="Density of live cells, log10", ylab="RNA:DNA")
+abline(lm(rna.dna ~ N.liv))
+
+plot(N.liv, N.ded, xlab="Density of live cells, log10", 
+     ylab="Density of dead cells, log10")
+abline(lm(N.ded ~ N.liv))
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
+
+par(mfrow=c(2, 2))
+
+plot(N.tot, rna, xlab="Total density of cells, log10", ylab="RNA")
+abline(lm(rna ~ N.tot))
+  
+plot(N.tot, dna, xlab="Total density of cells, log10", ylab="DNA")
+abline(lm(dna ~ N.tot))
+
+plot(N.tot, rna.dna, xlab="Total density of cells, log10", ylab="RNA:DNA")
+abline(lm(rna.dna ~ N.tot))
+
+plot(N.tot, N.ded, xlab="Total density of cells, log10", 
+     ylab="Density of dead cells, log10")
+abline(lm(N.ded ~ N.tot))
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+# Remove sites not shared between Community and Flow data
+act.com <- act.com[rownames(act.com)  %in% flo$pond, ]
+all.com <- all.com[rownames(all.com)  %in% row.names(act.com),]
+flo <- flo[flo$pond %in% row.names(act.com), ]
+
+N.act <- log10(rowSums(act.com))
+N.all <- log10(rowSums(all.com))
+
+S.act <- log10(rowSums(act.com > 0))
+S.all <- log10(rowSums(all.com > 0))
+
+S.chao.act <- log10(apply(act.com, 1, S.chao1))
+S.chao.all <- log10(apply(all.com, 1, S.chao1))
+
+N.tot <- log10(flo$N.totdens)
+N.liv <- log10(flo$N.livedens)
+N.ded <- log10(flo$N.deaddens)
+rna <- log10(flo$meanRNA)
+dna <- log10(flo$meanDNA)
+rna.dna  <- log10(flo$mean.RNADNA)
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
+
+par(mfrow=c(2, 2))
+plot(N.liv, S.all, xlab="Density of live cells, log10", ylab="S(total)")
+abline(lm(S.all ~ N.liv))
+  
+plot(N.liv, S.act, xlab="Density of live cells, log10", ylab="S(active)")
+abline(lm(S.act ~ N.liv))
+
+plot(N.liv, N.all, xlab="Density of live cells, log10", ylab="N(total)")
+abline(lm(N.all ~ N.liv))
+
+plot(N.liv, N.act, xlab="Density of live cells, log10", ylab="N(active)")
+abline(lm(N.act ~ N.liv))
+
+```
+
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=8}
+
+par(mfrow=c(3, 3))
+
+plot(rna.dna, S.all, xlab="RNA:DNA", ylab="S(total)")
+abline(lm(S.all ~ rna.dna))
+  
+plot(rna.dna, S.act, xlab="RNA:DNA", ylab="S(active)")
+abline(lm(S.act ~ rna.dna))
+
+plot(rna.dna, N.all, xlab="RNA:DNA", ylab="N(total)")
+abline(lm(N.all ~ rna.dna))
+
+plot(rna.dna, N.act, xlab="RNA:DNA", ylab="N(active)")
+abline(lm(N.act ~ rna.dna))
+
+plot(dna, S.all, xlab="DNA", ylab="S(total)")
+abline(lm(S.all ~ dna))
+  
+plot(dna, S.act, xlab="DNA", ylab="S(active)")
+abline(lm(S.act ~ dna))
+
+plot(dna, N.all, xlab="DNA", ylab="N(total)")
+abline(lm(N.all ~ dna))
+
+plot(dna, N.act, xlab="DNA", ylab="N(active)")
+abline(lm(N.act ~ dna))
+```
+
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+
+# First, remove sites not shared between the Environmental and Flow Cytometry data
+env <- env[env$Sample_ID %in% flo$pond, ]
+flo <- flo[flo$pond %in% env$Sample_ID, ]
+
+#env$TP <- log10(env$TP)
+#env$DOC <- log10(env$DOC)
+#env$DON <- log10(env$DON)
+#env$DO <- log10(env$DO)
+
+#env$N.tot <- log10(flo$N.totdens)
+#env$N.liv <- log10(flo$N.livedens)
+#env$N.ded <- log10(flo$N.deaddens)
+#env$rna <- log10(flo$meanRNA)
+#env$dna <- log10(flo$meanDNA)
+#env$rna.dna  <- log10(flo$mean.RNADNA)
+
+env$TP <- env$TP
+env$DOC <- env$DOC
+env$DON <- env$DON
+env$DO <- env$DO
+
+env$N.tot <- flo$N.totdens
+env$N.liv <- flo$N.livedens
+env$N.ded <- flo$N.deaddens
+env$rna <- flo$meanRNA
+env$dna <- flo$meanDNA
+env$rna.dna  <- flo$mean.RNADNA
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=8}
+
+par(mfrow=c(3, 3))
+p <- 1
+
+plot(env$TP, env$rna.dna, ylab="RNA:DNA", xlab="TP")
+fit <- lm(env$rna.dna ~ poly(env$TP, p))
+lines(sort(env$TP), fitted(fit)[order(env$TP)], col='red') 
+  
+plot(env$DOC, env$rna.dna, ylab="RNA:DNA", xlab="DOC")
+fit <- lm(env$rna.dna ~ poly(env$DOC, p))
+lines(sort(env$DOC), fitted(fit)[order(env$DOC)], col='red') 
+
+plot(env$DON, env$rna.dna, ylab="RNA:DNA", xlab="DON")
+fit <- lm(env$rna.dna ~ poly(env$DON, p))
+lines(sort(env$DON), fitted(fit)[order(env$DON)], col='red') 
+
+plot(env$chla, env$rna.dna, ylab="RNA:DNA", xlab="chla")
+fit <- lm(env$rna.dna ~ poly(env$chla, p))
+lines(sort(env$chla), fitted(fit)[order(env$chla)], col='red') 
+
+plot(env$DO, env$rna.dna, ylab="RNA:DNA", xlab="DO")
+fit <- lm(env$rna.dna ~ poly(env$DO, p))
+lines(sort(env$DO), fitted(fit)[order(env$DO)], col='red') 
+  
+plot(env$canopy, env$rna.dna, ylab="RNA:DNA", xlab="canopy")
+fit <- lm(env$rna.dna ~ poly(env$canopy, p))
+lines(sort(env$canopy), fitted(fit)[order(env$canopy)], col='red') 
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=8}
+
+par(mfrow=c(3, 3))
+p <- 1
+
+plot(env$TP, env$rna, ylab="RNA", xlab="TP")
+fit <- lm(env$rna ~ poly(env$TP, p))
+lines(sort(env$TP), fitted(fit)[order(env$TP)], col='red') 
+  
+plot(env$DOC, env$rna, ylab="RNA", xlab="DOC")
+fit <- lm(env$rna ~ poly(env$DOC, p))
+lines(sort(env$DOC), fitted(fit)[order(env$DOC)], col='red') 
+
+plot(env$DON, env$rna, ylab="RNA", xlab="DON")
+fit <- lm(env$rna ~ poly(env$DON, p))
+lines(sort(env$DON), fitted(fit)[order(env$DON)], col='red') 
+
+plot(env$chla, env$rna, ylab="RNA", xlab="chla")
+fit <- lm(env$rna ~ poly(env$chla, p))
+lines(sort(env$chla), fitted(fit)[order(env$chla)], col='red') 
+
+plot(env$DO, env$rna, ylab="RNA", xlab="DO")
+fit <- lm(env$rna ~ poly(env$DO, p))
+lines(sort(env$DO), fitted(fit)[order(env$DO)], col='red') 
+  
+plot(env$canopy, env$rna, ylab="RNA", xlab="canopy")
+fit <- lm(env$rna ~ poly(env$canopy, p))
+lines(sort(env$canopy), fitted(fit)[order(env$canopy)], col='red') 
+```
+
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=8}
+
+par(mfrow=c(3, 3))
+p <- 1
+
+plot(env$TP, env$N.liv, ylab="live", xlab="TP")
+fit <- lm(env$N.liv ~ poly(env$TP, p))
+lines(sort(env$TP), fitted(fit)[order(env$TP)], col='red') 
+  
+plot(env$DOC, env$N.liv, ylab="live", xlab="DOC")
+fit <- lm(env$N.liv ~ poly(env$DOC, p))
+lines(sort(env$DOC), fitted(fit)[order(env$DOC)], col='red') 
+
+plot(env$DON, env$N.liv, ylab="live", xlab="DON")
+fit <- lm(env$N.liv ~ poly(env$DON, p))
+lines(sort(env$DON), fitted(fit)[order(env$DON)], col='red') 
+
+plot(env$chla, env$N.liv, ylab="live", xlab="chla")
+fit <- lm(env$N.liv ~ poly(env$chla, p))
+lines(sort(env$chla), fitted(fit)[order(env$chla)], col='red') 
+
+plot(env$DO, env$N.liv, ylab="live", xlab="DO")
+fit <- lm(env$N.liv ~ poly(env$DO, p))
+lines(sort(env$DO), fitted(fit)[order(env$DO)], col='red') 
+  
+plot(env$canopy, env$N.liv, ylab="live", xlab="canopy")
+fit <- lm(env$N.liv ~ poly(env$canopy, p))
+lines(sort(env$canopy), fitted(fit)[order(env$canopy)], col='red') 
+```
+
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=8}
+
+par(mfrow=c(3, 3))
+p <- 1
+
+plot(env$TP, env$N.tot, ylab="total", xlab="TP")
+fit <- lm(env$N.tot ~ poly(env$TP, p))
+lines(sort(env$TP), fitted(fit)[order(env$TP)], col='red') 
+  
+plot(env$DOC, env$N.tot, ylab="total", xlab="DOC")
+fit <- lm(env$N.tot ~ poly(env$DOC, p))
+lines(sort(env$DOC), fitted(fit)[order(env$DOC)], col='red') 
+
+plot(env$DON, env$N.tot, ylab="total", xlab="DON")
+fit <- lm(env$N.tot ~ poly(env$DON, p))
+lines(sort(env$DON), fitted(fit)[order(env$DON)], col='red') 
+
+plot(env$chla, env$N.tot, ylab="total", xlab="chla")
+fit <- lm(env$N.tot ~ poly(env$chla, p))
+lines(sort(env$chla), fitted(fit)[order(env$chla)], col='red') 
+
+plot(env$DO, env$N.tot, ylab="total", xlab="DO")
+fit <- lm(env$N.tot ~ poly(env$DO, p))
+lines(sort(env$DO), fitted(fit)[order(env$DO)], col='red') 
+  
+plot(env$canopy, env$N.tot, ylab="total", xlab="canopy")
+fit <- lm(env$N.tot ~ poly(env$canopy, p))
+lines(sort(env$canopy), fitted(fit)[order(env$canopy)], col='red') 
+```

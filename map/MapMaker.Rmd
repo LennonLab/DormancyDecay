@@ -1,0 +1,114 @@
+---
+title: "IN Ponds Map"
+header-includes:
+   - \usepackage{array}
+output: pdf_document
+latex_engine: xelatex
+geometry: margin=2.54cm
+--- 
+
+```{r, results = 'hide'}
+rm(list=ls())
+getwd()
+setwd("~/GitHub/DistDecay/map") 
+
+require(sp)
+require(gstat)
+require(raster)
+require(maptools)
+require(maps)
+require(mapdata)
+require(rgdal)
+require(rgeos)
+require(rgdal)
+require(dplyr)
+require(ggplot2)
+require(ggmap)
+require(devtools)
+require(stringr)
+require(gridExtra)
+require(grid)
+require(rasterVis)
+require(scales)
+require(ggsn)
+require(jpeg)
+require(ripa)
+require(cowplot)
+
+sample.ponds <- read.table("~/GitHub/DistDecay/data/Environmental/20130801_PondDataMod.csv", sep = ",", header = TRUE)
+
+all.ponds <- read.table("~/GitHub/DistDecay/map/RefugePonds.csv", sep = ",", header = TRUE)
+```
+
+
+```{r}
+states <- map_data("state")
+in_df <- subset(states, region == "indiana")
+counties <- map_data("county")
+in_county <- subset(counties, region == "indiana")
+
+PG <- readShapePoly("~/GitHub/DistDecay/map/Shape/NHDWaterbody.shp")
+Q <- plot(PG)
+AG <- fortify(PG)
+```
+
+
+```{r}
+grid.newpage()
+main_map <- ggplot() + geom_polygon(data=AG, aes(long, lat, group = group), colour = 
+  alpha("dodgerblue", 0.5), size = 0.1, fill = 'skyblue', alpha = .3) +
+  coord_fixed(1.3) + 
+  geom_point(data=all.ponds, mapping = aes(x = x, y = y, group=Name), color = "red") +
+  geom_point(data=sample.ponds, mapping = aes(x = long, y = lat, group=Sample_ID), color = "blue") +
+  labs(x = "Longitude") +
+  labs(y = "Latitude") +
+  coord_fixed(xlim = c(-86.5, -86.1),  ylim = c(38.94, 39.22), ratio = 1.3) +
+  theme(axis.text.y   = element_text(size=14),
+        axis.text.x   = element_text(size=14),
+        axis.title.y  = element_text(size=18),
+        axis.title.x  = element_text(size=18),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill=NA, size=3)) +
+  scalebar(location="bottomright",y.min=38.945, y.max=39.15, 
+             x.min= -86.5, x.max= -86.11, dist=5, dd2km= TRUE, model='WGS84',
+             st.dist=.04) +
+  north(location="bottomleft",y.min=38.945, y.max=39.15, 
+             x.min= -86.5, x.max= -86.11, symbol = 10) +
+  panel_border(remove=TRUE)
+
+
+inset <- ggplot(data = in_df, mapping = aes(x = long, y = lat, group = group)) +
+  coord_fixed(1.3) + 
+  geom_polygon(color = "black", fill = "gray") +
+  geom_point(data=all.ponds, mapping = aes(x = x, y = y, group=Name), 
+             size = 0.5, color = "red") +
+  geom_point(data=sample.ponds, mapping = aes(x = long, y = lat, group=Sample_ID),
+             size = 0.5, color = "blue") +
+  theme_void()
+
+v2 <- ggplotGrob(inset)
+main_map <- main_map + annotation_custom(grob = v2, xmin = -86.5, xmax = -86.4, ymin = 39.12, ymax = 39.22)
+```
+
+
+```{r, results = 'hide', echo=TRUE, message = FALSE, warning = FALSE}
+plot.new()
+img <- readJPEG('~/GitHub/DistDecay/map/PondPics/20170709_1155_DormDecay_HNF132.jpg')
+
+img <- img[, 1:2000]
+g <- rasterGrob(img, interpolate=TRUE)
+```
+
+```{r}
+pond.pic <- ggplot(geom="blank") +
+  annotation_custom(g, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
+  theme(legend.position="none",
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  panel_border(remove=TRUE)
+
+plot_grid(main_map, pond.pic, nrow = 1, ncol = 2, scale = c(1.0, 0.88))
+```
