@@ -1,0 +1,99 @@
+---
+title: "Univariate relationships in IN Ponds data"
+geometry: margin=2.54cm
+output: pdf_document
+header-includes: \usepackage{array}
+---
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+# Retrieve and set the working directory
+rm(list=ls())
+getwd()
+setwd("~/GitHub/DistDecay")
+
+# Load packages
+require("simba")
+require("fossil")
+require("corrplot")
+require("cowplot")
+
+# Load Environmental and Geographical data
+env <- read.table("~/GitHub/DistDecay/data/Environmental/20130801_PondDataMod.csv", 
+                  sep = ",", header = TRUE)
+#env <- env[complete.cases(env),]
+env[which(env$Sample_ID == "HNF133"), ]["SpC"] <- 55
+env$chla <- log(env$chla)
+
+# Load Flow Cytometry Data
+flo <- read.table("~/GitHub/DistDecay/data/FlowCytometry/INPonds_flowdat.csv", 
+                  sep = ",", header = TRUE)
+flo <- flo[complete.cases(flo),]
+
+levels(flo$pond) <- sub("_", "", levels(flo$pond))
+levels(flo$pond) <- sub("BCSP", "BC", levels(flo$pond))
+flo <- within(flo, rm("sample"))
+
+flo <- flo[flo$pond %in% env$Sample_ID, ]
+env <- env[env$Sample_ID %in% flo$pond, ]
+
+env$TP <- log(env$TP)
+env$DOC <- log(env$DOC)
+env$DO <- log(env$DO)
+
+env$N.tot <- log(flo$N.totdens)
+env$N.liv <- log(flo$N.livedens)
+env$N.ded <- log(flo$N.deaddens)
+env$rna <- log(flo$meanRNA)
+env$dna <- log(flo$meanDNA)
+env$rna.dna  <- log(flo$meanRNA/flo$meanDNA)
+```
+
+
+```{r, echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=8}
+
+plot.new()
+par(mfrow=c(3, 2), mar = c(5,5,3,1), oma =c(0,0,0,0))
+
+corr <- cor.test(env$TP, env$rna, method="pearson")
+p <- round(corr$p.value,3)
+c <- round(corr$estimate,2)
+plot(env$TP, env$rna, ylab="RNA", xlab="TP", cex.lab=1.25,
+     cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
+abline(lm(env$rna ~ env$TP))
+
+corr <- cor.test(env$TP, env$dna, method="pearson")
+p <- round(corr$p.value,3)
+c <- round(corr$estimate,2)
+plot(env$TP, env$dna, ylab="DNA", xlab="TP", cex.lab=1.25,
+     cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
+abline(lm(env$dna ~ env$TP))
+
+corr <- cor.test(env$TP, env$rna.dna, method="pearson")
+p <- round(corr$p.value,3)
+c <- round(corr$estimate,2)
+plot(env$TP, env$rna.dna, ylab="RNA:DNA", xlab="TP", cex.lab=1.25,
+     cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
+abline(lm(env$rna.dna ~ env$TP))
+
+
+corr <- cor.test(env$TP, env$N.liv, method="pearson")
+p <- round(corr$p.value,3)
+c <- round(corr$estimate,2)
+plot(env$TP, env$N.liv, ylab="Live density", xlab="TP", cex.lab=1.25,
+     cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
+abline(lm(env$N.liv ~ env$TP))
+
+corr <- cor.test(env$TP, env$N.tot, method="pearson")
+p <- round(corr$p.value,3)
+c <- round(corr$estimate,2)
+plot(env$TP, env$N.tot, ylab="Total N", xlab="TP", cex.lab=1.25,
+     cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
+abline(lm(env$N.tot ~ env$TP))
+
+corr <- cor.test(env$TP, env$N.ded, method="pearson")
+p <- round(corr$p.value,3)
+c <- round(corr$estimate,2)
+plot(env$TP, env$N.ded, ylab="Dead density", xlab="TP", cex.lab=1.25,
+     cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
+abline(lm(env$N.ded ~ env$TP))
+```

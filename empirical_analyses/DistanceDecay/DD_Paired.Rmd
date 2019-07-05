@@ -1,0 +1,284 @@
+---
+title: "Supplemental Figures: Compositional similarity vs. Geographic distance"
+geometry: margin=2.54cm
+date: "November 7, 2015"
+output: pdf_document
+header-includes: \usepackage{array}
+---
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+# Retrieve and set the working directory
+rm(list=ls())
+getwd()
+setwd("~/GitHub/DistDecay/empirical_analyses")
+
+# Load packages
+require("simba")
+require("fossil")
+require("data.table")
+load(file = "~/GitHub/DistDecay/data/MicrobialCommunity/INPond_Initial.RData")
+
+# Load Environmental and Geographical Data
+env <- read.table("~/GitHub/DistDecay/data/Environmental/20130801_INPondDataMod.csv", sep = ",", header = TRUE)
+env <- env[complete.cases(env),]
+env[which(env$Sample_ID == "HNF133"), ]["SpC"] <- 55
+env$chla <- log(env$chla)
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+# Select DNA Data: Use the `grep()` Command and Rename with `gsub()`
+# The active portion, based on cDNA
+act.com <- Pond97[grep("*-cDNA", rownames(Pond97)), ]
+rownames(act.com) <- gsub("\\-cDNA", "", rownames(act.com))
+
+# The community without respect to active or not, 16S rRNA gene sequences
+all.com <- Pond97[grep("*-DNA", rownames(Pond97)), ]
+rownames(all.com) <- gsub("\\-DNA", "", rownames(all.com))
+
+# Remove Sites Not in the Environmental Data Set
+act.com <- act.com[rownames(act.com)  %in% env$Sample_ID, ]
+all.com <- all.com[rownames(all.com)  %in% env$Sample_ID, ]
+
+# Remove sites not shared between matrices
+all.com <- all.com[rownames(all.com)  %in% row.names(act.com),]
+env <- env[env$Sample_ID %in% row.names(act.com),]
+
+# Remove zero occurrence taxa
+act.com2 <- act.com[ , colSums(act.com) > 0]
+all.com2 <- all.com[ , colSums(all.com) > 0]
+
+# Use relative abundance
+act.com2 <- sweep(act.com2, 1, rowSums(act.com2), '/')
+all.com2 <- sweep(all.com2, 1, rowSums(all.com2), '/')
+```
+
+
+```{r}
+# Define Environmental Matrix
+env.dat <- as.matrix(subset(env, select = c("canopy", "DO", "ORP", "pH", "Temp", "DOC", "DON", "TDS", "Color", "chla", "TP", "Depth", "Salinity")))
+env.dat2 <- scale(env.dat)
+
+pca <- princomp(env.dat2)
+scores <- as.data.frame(pca$scores)
+pca1 <- scores[, 1]
+pca2 <- scores[, 2]
+
+env$scores.1 <- scores[, 1]
+env$scores.2 <- scores[, 2]
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+x.1 <- c()
+x.2 <- c()
+x.3 <- c()
+x.4 <- c()
+x.5 <- c()
+x.6 <- c()
+x.7 <- c()
+x.8 <- c()
+x.9 <- c()
+x.10 <- c()
+x.11 <- c()
+
+y.act <- c()
+y.all <- c()
+
+a <- as.numeric(Sys.time())
+set.seed(a)
+
+for (i in c(1:10000)){
+  
+  otu.act <- sample(1:dim(act.com2)[2], 1)
+  otu.all <- sample(1:dim(all.com2)[2], 1)
+  otu.act <- sample(1:100, 1)
+  otu.all <- sample(1:100, 1)
+  
+  site <- sample(1:49, 2, replace=FALSE)
+  
+  y1.act <- act.com2[site[1], otu.act]
+  y2.act <- act.com2[site[2], otu.act]
+  
+  y1.all <- all.com2[site[1], otu.all]
+  y2.all <- all.com2[site[2], otu.all]
+  
+  if (y1.act <= 0 || y2.act <= 0){ next}
+  if (y1.all <= 0 || y2.all <= 0){ next}
+  
+  pdiff.y <- abs(y1.act - y2.act)#/mean(c(y1.act, y2.act))
+  y.act <- c(y.act, pdiff.y)
+  
+  pdiff.y <- abs(y1.all - y2.all)#/mean(c(y1.all, y2.all))
+  y.all <- c(y.all, pdiff.y)
+  
+  x1 <- env$Temp[site[1]]
+  x2 <- env$Temp[site[2]]
+  
+  x3 <- env$chla[site[1]]
+  x4 <- env$chla[site[2]]
+  
+  x5 <- env$canopy[site[1]]
+  x6 <- env$canopy[site[2]]
+  
+  x7 <- env$TP[site[1]]
+  x8 <- env$TP[site[2]]
+  
+  x9 <- env$pH[site[1]]
+  x10 <-env$pH[site[2]]
+  
+  x11 <- env$ORP[site[1]]
+  x12 <- env$ORP[site[2]]
+  
+  x13 <- env$DOC[site[1]]
+  x14 <- env$DOC[site[2]]
+  
+  x15 <- env$DON[site[1]]
+  x16 <- env$DON[site[2]]
+  
+  x17 <- env$DO[site[1]]
+  x18 <- env$DO[site[2]]
+  
+  x1 <- env$scores.1[site[1]]
+  x2 <- env$scores.1[site[2]]
+  y1 <- env$scores.2[site[1]]
+  y2 <- env$scores.2[site[2]]
+  pca.dist <- sqrt((x1 - x2)^2 + (y1 - y2)^2)
+  x19 <- pca.dist
+  x20 <- 0
+  
+  la1 <- env$lat[site[1]]
+  la2 <- env$lat[site[2]]
+  lo1 <- env$long[site[1]]
+  lo2 <- env$long[site[2]]
+  long <- c(lo1, lo2)
+  lat <- c(la1, la2)
+  long.lat <- as.matrix(cbind(long, lat))
+  geo.dist <- earth.dist(long.lat, dist = TRUE)
+  x21 <- geo.dist
+  x22 <- 0
+  
+  pdiff.x <- abs(x1 - x2)#/mean(c(x1, x2))
+  x.1 <- c(x.1, pdiff.x)
+  
+  pdiff.x <- abs(x3 - x4)#/mean(c(x3, x4))
+  x.2 <- c(x.2, pdiff.x)
+  
+  pdiff.x <- abs(x5 - x6)#/mean(c(x5, x6))
+  x.3 <- c(x.3, pdiff.x)
+  
+  pdiff.x <- abs(x7 - x8)#/mean(c(x7, x8))
+  x.4 <- c(x.4, pdiff.x)
+  
+  pdiff.x <- abs(x9 - x10)#/mean(c(x9, x10))
+  x.5 <- c(x.5, pdiff.x)
+  
+  pdiff.x <- abs(x11 - x12)#/mean(c(x11, x12))
+  x.6 <- c(x.6, pdiff.x)
+  
+  pdiff.x <- abs(x13 - x14)#/mean(c(x13, x14))
+  x.7 <- c(x.7, pdiff.x)
+  
+  pdiff.x <- abs(x15 - x16)#/mean(c(x15, x16))
+  x.8 <- c(x.8, pdiff.x)
+  
+  pdiff.x <- abs(x17 - x18)#/mean(c(x17, x18))
+  x.9 <- c(x.9, pdiff.x)
+  
+  pdiff.x <- abs(x19 - x20)#/mean(c(x19, x20))
+  x.10 <- c(x.10, pdiff.x)
+  
+  pdiff.x <- abs(x21 - x22)#/mean(c(x21, x22))
+  x.11 <- c(x.11, pdiff.x)
+  
+}
+
+```
+
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
+clr <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan",
+              "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
+
+plot.new()
+
+file <- paste("~/GitHub/DistDecay/figs/FromSites/DD_Paired1.png", sep="")
+png(filename=file, width=5, height=5, units="in", res=600, pointsize=10)
+par(mfrow=c(3, 3), mgp=c(3.1,1,0), mar = c(4,6,2,1), oma =c(3,3,0,0))
+
+dat <- data.frame('x.1' = x.1, 'x.2' = x.2,
+                  'x.3' = x.3, 'x.4' = x.4,
+                  'x.5' = x.5, 'x.6' = x.6,
+                  'x.7' = x.7, 'x.8' = x.8,
+                  'x.9' = x.9, 'y' = y.act)
+
+dat[mapply(is.infinite, dat)] <- NA
+dat <- dat[complete.cases(dat),]
+
+colors <- densCols(dat$x.1, dat$y, colramp=clr)
+plot(dat$x.1, dat$y, ylab='', xlab='', main="Temperature", 
+  cex.main = 1.5, col = colors, cex=1, cex.lab=1, cex.axis = 1, pch=20)
+
+colors <- densCols(dat$x.2, dat$y, colramp=clr)
+plot(dat$x.2, dat$y, ylab='', xlab='', main="Chlorophyll-a", 
+  cex.main = 1.5, col = colors, cex=1, cex.lab=1, cex.axis = 1, pch=20)
+
+colors <- densCols(dat$x.3, dat$y, colramp=clr)
+plot(dat$x.3, dat$y, ylab='', xlab='', main="Canopy", 
+  cex.main = 1.5, col = colors, cex=1, cex.lab=1, cex.axis = 1, pch=20)
+
+colors <- densCols(dat$x.4, dat$y, colramp=clr)
+plot(dat$x.4, dat$y, ylab='', xlab='', main="TP", 
+  cex.main = 1.5, col = colors, cex=1, cex.lab=1, cex.axis = 1, pch=20)
+
+colors <- densCols(dat$x.5, dat$y, colramp=clr)
+plot(dat$x.5, dat$y, ylab='', xlab='', main="pH", 
+  cex.main = 1.5, col = colors, cex=1, cex.lab=1, cex.axis = 1, pch=20)
+
+colors <- densCols(dat$x.6, dat$y, colramp=clr)
+plot(dat$x.6, dat$y, ylab='', xlab='', main="ORP", 
+  cex.main = 1.5, col = colors, cex=1, cex.lab=1, cex.axis = 1, pch=20)
+
+colors <- densCols(dat$x.7, dat$y, colramp=clr)
+plot(dat$x.7, dat$y, ylab='', xlab='', main="DOC", 
+  cex.main = 1.5, col = colors, cex=1, cex.lab=1, cex.axis = 1, pch=20)
+
+colors <- densCols(dat$x.8, dat$y, colramp=clr)
+plot(dat$x.8, dat$y, ylab='', xlab='', main="DON", 
+  cex.main = 1.5, col = colors, cex=1, cex.lab=1, cex.axis = 1, pch=20)
+
+colors <- densCols(dat$x.9, dat$y, colramp=clr)
+plot(dat$x.9, dat$y, ylab='', xlab='', main='DO', 
+  cex.main = 1.5, col = colors, cex=1, cex.lab=1, cex.axis = 1, pch=20)
+
+mtext("Difference in relative abundance", 
+      line=0, side=2, outer=TRUE, srt=90, cex=1.5)
+mtext("Difference in environmental variable", 
+      line=1, side=1, outer=TRUE, cex=1.5)
+
+dev.off()
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
+plot.new()
+file <- paste("~/GitHub/DistDecay/figs/FromSites/DD_Paired2.png", sep="")
+png(filename=file, width=5, height=2.5, units="in", res=600, pointsize=10)
+par(mfrow=c(1, 2), mar = c(4,6,2,1), oma =c(0,0,0,0))
+
+dat <- data.frame('x.10' = x.10, 'x.11' = x.11, 
+                  'y' = log(y.all))
+
+colors <- densCols(dat$x.10, dat$y, colramp=clr)
+plot(dat$x.10, dat$y, ylab='Difference in abundance, log10', 
+     xlab='Difference in PCA score', main="PCA1", 
+  cex.main = 1.5, col = colors, cex=1, cex.lab=1, cex.axis = 1, pch=20)
+
+colors <- densCols(dat$x.11, dat$y, colramp=clr)
+plot(dat$x.11, dat$y, ylab='Difference in abundance, log10', 
+     xlab='Distance, Km', main="Geography", 
+  cex.main = 1.5, col = colors, cex=1, cex.lab=1, cex.axis = 1, pch=20)
+
+dev.off()
+```
