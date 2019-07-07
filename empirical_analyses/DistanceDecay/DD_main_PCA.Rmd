@@ -10,18 +10,20 @@ header-includes: \usepackage{array}
 # Retrieve and set the working directory
 rm(list=ls())
 getwd()
-setwd("~/GitHub/DistDecay/empirical_analyses/DistanceDecay")
+setwd("~/GitHub/DormancyDecay/empirical_analyses/DistanceDecay")
 # Load packages
+#install.packages('simba', dependencies = TRUE)
 require("simba")
+#install.packages("fossil")
 require("fossil")
 ```
 
 
 ```{r}
 # Load community data
-load(file = "~/GitHub/DistDecay/data/MicrobialCommunity/INPond_Initial.RData")
+load(file = "~/GitHub/DormancyDecay/data/MicrobialCommunity/INPond_Initial.RData")
 # Load Environmental and Geographical Data
-env <- read.table("~/GitHub/DistDecay/data/Environmental/20130801_INPondDataMod.csv", sep = ",", header = TRUE)
+env <- read.table("~/GitHub/DormancyDecay/data/Environmental/20130801_INPondDataMod.csv", sep = ",", header = TRUE)
 env <- env[complete.cases(env),]
 env[which(env$Sample_ID == "HNF133"), ]["SpC"] <- 55
 env[which(env$Sample_ID == "YSF46"), ]["lat"] <- 39.1186
@@ -51,8 +53,8 @@ act.com <- act.com[ , colSums(act.com) > 0]
 all.com <- all.com[ , colSums(all.com) > 0]
 
 # Use relative abundance
-#act.com <- sweep(act.com, 1, rowSums(act.com), '/')
-#all.com <- sweep(all.com, 1, rowSums(all.com), '/')
+act.com <- sweep(act.com, 1, rowSums(act.com), '/')
+all.com <- sweep(all.com, 1, rowSums(all.com), '/')
 ```
 
 ```{r}
@@ -62,9 +64,8 @@ max(all.com)
 rowMeans(all.com)
 mean(rowSums(act.com != 0))#/21568
 mean(rowSums(all.com != 0))#/27466
-
-
 ```
+
 
 ```{r}
 # Geographic Distances (Kilometers) Among Ponds
@@ -84,9 +85,9 @@ env.dist <- vegdist(scores[, 1], "euclidean")
 env.dist <- env.dist/max(env.dist)
 env.dist[which(!is.finite(env.dist))] = NA
 
-write.table(scores[,1], "~/GitHub/DistDecay/model/EmpiricalDataForModeling/PCA-data/pca.txt", sep="\t")
-write.table(env$long, "~/GitHub/DistDecay/model/EmpiricalDataForModeling/PCA-data/lon.txt", sep="\t")
-write.table(env$lat, "~/GitHub/DistDecay/model/EmpiricalDataForModeling/PCA-data/lat.txt", sep="\t")
+write.table(scores[,1], "~/GitHub/DormancyDecay/model/EmpiricalDataForModeling/PCA-data/pca.txt", sep="\t")
+write.table(env$long, "~/GitHub/DormancyDecay/model/EmpiricalDataForModeling/PCA-data/lon.txt", sep="\t")
+write.table(env$lat, "~/GitHub/DormancyDecay/model/EmpiricalDataForModeling/PCA-data/lat.txt", sep="\t")
 ```
 
 
@@ -126,7 +127,7 @@ coeff <- summary(DD.all.geo, correlation = TRUE)
 clr <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan",
               "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
 
-file <- paste("~/GitHub/DistDecay/figs/FromSites/DDR-Bray.png", sep="")
+file <- paste("~/GitHub/DormancyDecay/figs/FromSites/DDR-Bray.png", sep="")
 png(filename=file, width=5, height=5, units="in", res=600, pointsize=10)
 par(mfrow=c(2, 2), mar = c(5,5,3,1), oma =c(0,0,4,0))
 
@@ -181,6 +182,9 @@ if(a.dd == 'y'){
   d1 <- diffslope(env.dist, act.bray.dist, env.dist, all.bray.dist, ic=TRUE, permutations=1000)
   d2 <- diffslope(geo.dist, act.bray.dist, geo.dist, all.bray.dist, ic=TRUE, permutations=1000)
   
+  d3 <- diffic(env.dist, act.bray.dist, env.dist, all.bray.dist, resc.y=FALSE, permutations=1000)
+  d4 <- diffic(geo.dist, act.bray.dist, geo.dist, all.bray.dist, resc.y=FALSE, permutations=1000)
+    
   Mtitle <- paste("Bray-Curtis\n",
       round(100*(abs((slope1-slope2)/mean(c(slope1, slope2)))),1), '% difference in environmental DDRs; p = ', d1[3],
       '\n',round(100*(abs((slope3-slope4)/mean(c(slope3, slope4)))),1), '% difference in geographic DDRs; p = ', d2[3], sep="")
@@ -273,6 +277,9 @@ if(a.dd == 'y'){
   d1 <- diffslope(env.dist, act.sore.dist, env.dist, all.sore.dist, ic=TRUE, permutations=1000)
   d2 <- diffslope(geo.dist, act.sore.dist, geo.dist, all.sore.dist, ic=TRUE, permutations=1000)
   
+  d3 <- diffic(env.dist, act.sore.dist, env.dist, all.sore.dist, resc.y=FALSE, permutations=1000)
+  d4 <- diffic(geo.dist, act.sore.dist, geo.dist, all.sore.dist, resc.y=FALSE, permutations=1000)
+  
   Mtitle <- paste("Sorensen\n",
       round(100*(abs((slope1-slope2)/mean(c(slope1, slope2)))),1), '% difference in environmental DDRs; p = ', d1[3],
       '\n',round(100*(abs((slope3-slope4)/mean(c(slope3, slope4)))),1), '% difference in geographic DDRs; p = ', d2[3], sep="")
@@ -310,7 +317,7 @@ coeff <- summary(DD.all.geo, correlation = TRUE)
 clr <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan",
               "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
 
-file <- paste("~/GitHub/DistDecay/figs/FromSites/DDR-Canberra.png", sep="")
+file <- paste("~/GitHub/DormancyDecay/figs/FromSites/DDR-Canberra.png", sep="")
 png(filename=file, width=5, height=5, units="in", res=600, pointsize=10)
 par(mfrow=c(2, 2), mar = c(5,5,3,1), oma =c(0,0,4,0))
 
@@ -413,7 +420,7 @@ coeff <- summary(DD.all.geo, correlation = TRUE)
 clr <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan",
               "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
 
-file <- paste("~/GitHub/DistDecay/figs/FromSites/DDR-Bray-EnvVsGeo.png", sep="")
+file <- paste("~/GitHub/DormancyDecay/figs/FromSites/DDR-Bray-EnvVsGeo.png", sep="")
 png(filename=file, width=5, height=5, units="in", res=600, pointsize=10)
 par(mfrow=c(2, 2), mar = c(5,5,3,1), oma =c(0,0,4,0))
 

@@ -7,7 +7,7 @@ header-includes: \usepackage{array}
 
 ```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
 # Retrieve and set the working directory
-setwd("~/GitHub/DistDecay/empirical_analyses/Ordination")
+setwd("~/GitHub/DormancyDecay/empirical_analyses/Ordination")
 
 #install_github("ggbiplot", "vqv")
 require("devtools")
@@ -19,62 +19,17 @@ require("reshape")
 ```
 
 ```{r}
-# Load community data
-load(file = "~/GitHub/DistDecay/data/MicrobialCommunity/INPond_Initial.RData")
 # Load Environmental and Geographical Data
-env <- read.table("~/GitHub/DistDecay/data/Environmental/20130801_PondDataMod.csv", sep = ",", header = TRUE)
+env <- read.table("~/GitHub/DormancyDecay/data/Environmental/20130801_INPondDataMod.csv", sep = ",", header = TRUE)
 env <- env[complete.cases(env),]
 env[which(env$Sample_ID == "HNF133"), ]["SpC"] <- 55
 env[which(env$Sample_ID == "YSF46"), ]["lat"] <- 39.1186
-env[c("DON")] <- list(NULL)
-```
-
-
-```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
-# Select DNA Data: Use the `grep()` Command and Rename with `gsub()`
-# The active portion, based on cDNA
-act.com <- Pond97[grep("*-cDNA", rownames(Pond97)), ]
-rownames(act.com) <- gsub("\\-cDNA", "", rownames(act.com))
-
-# The community without respect to active or not, 16S rRNA gene sequences
-all.com <- Pond97[grep("*-DNA", rownames(Pond97)), ]
-rownames(all.com) <- gsub("\\-DNA", "", rownames(all.com))
-
-# Remove Sites Not in the Environmental Data Set
-act.com <- act.com[rownames(act.com)  %in% env$Sample_ID, ]
-all.com <- all.com[rownames(all.com)  %in% env$Sample_ID, ]
-
-# Remove sites not shared between matrices
-all.com <- all.com[rownames(all.com)  %in% row.names(act.com),]
-env <- env[env$Sample_ID %in% row.names(act.com),]
-
-# Remove Zero-Occurrence Taxa
-act.com <- act.com[ , colSums(act.com) > 0]
-all.com <- all.com[ , colSums(all.com) > 0]
-
-# Use relative abundance
-act.com <- sweep(act.com, 1, rowSums(act.com), '/')
-all.com <- sweep(all.com, 1, rowSums(all.com), '/')
-```
-
-
-```{r}
-# Geographic Distances (Kilometers) Among Ponds
-long.lat <- as.matrix(cbind(env$long, env$lat))
-geo.dist <- earth.dist(long.lat, dist = TRUE)
-geo.dist <- geo.dist/max(geo.dist)
-geo.dist[which(!is.finite(geo.dist))] = NA
-
-# Geographic variables
-geo.dat <- as.matrix(subset(env, select = lat:long))
-# Pond environmental variables
-env.dat <- as.matrix(subset(env, select = Depth:TP))
+env.dat <- as.matrix(subset(env, select = Elevation:TP))
 ```
 
 
 ```{r}
 locs <- env[, "Location"]
-
 # Standardize and center
 env.dat <- scale(env.dat, center = TRUE, scale = TRUE)
 
@@ -86,7 +41,7 @@ plot(pca, type = "l")
 summary(pca)
 predict(pca, newdata=tail(env.dat, 2))
 
-file <- paste("~/GitHub/DistDecay/figs/PCA.png", sep="")
+file <- paste("~/GitHub/DormancyDecay/figs/FromSites/Env_PCA.png", sep="")
 png(filename=file, width=5, height=5, units="in", res=600, pointsize=10)
 
 g <- ggbiplot(pca, obs.scale = 1, var.scale = 1, 
@@ -96,7 +51,6 @@ g <- g + scale_color_discrete(name = '')
 g <- g + theme(legend.direction = 'horizontal', 
                legend.position = 'top')
 print(g)
-#png(filename=file)
 dev.off()
 ```
 

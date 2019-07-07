@@ -1,13 +1,12 @@
 from __future__ import division
 import sys
 import  matplotlib.pyplot as plt
-from random import shuffle, sample
+from random import sample
 import numpy as np
 from scipy import stats
 from mpl_toolkits.basemap import Basemap
 from os.path import expanduser
-import scipy as sc
-import scipy.spatial.distance
+from math import radians, cos, sin, asin, sqrt
 
 
 def getXY():
@@ -45,6 +44,24 @@ def getEnv():
     return pca1
 
 
+def haversine(lon1, lat1, lon2, lat2):
+    """
+    Calculate the great circle distance between two points 
+    on the earth (specified in decimal degrees)
+    """
+    # convert decimal degrees to radians 
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+    # haversine formula 
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a))
+    # Radius of earth in kilometers is 6371
+    km = 6371 * c
+    return km
+
+
+
 xs, ys, = getXY()
 pca1 = getEnv()
 
@@ -60,7 +77,7 @@ for j in range(n):
         y1 = ys[j]
         y2 = ys[k]
 
-        dif = ((x1 - x2)**2 + (y1 - y2)**2)**0.5
+        dif = haversine(x1, y1, x2, x2)
         geodif.append(dif)
 
         dif = np.absolute(pca1[j] - pca1[k])
@@ -106,29 +123,30 @@ for n in sampsize:
     sp.append(np.mean(rhop))
 
 fig = plt.figure()
-ax = fig.add_subplot(3, 3, 1)
-plt.scatter(gdif, edif, color = '0.3', alpha= 1 , s = 20, linewidths=0.5, edgecolor='w')
-plt.xlabel('Geographic distance', fontsize=8)
-plt.ylabel('Environmental distance', fontsize=8)
+ax = fig.add_subplot(2, 2, 1)
+plt.scatter(gdif, edif, color = '0.3', alpha= 1 , s = 5, linewidths=0.2, edgecolor='w')
+plt.xlabel('Geo. distance', fontsize=10)
+plt.ylabel('Env. distance', fontsize=10)
 plt.tick_params(axis='both', labelsize=6)
 
+'''
 ax = fig.add_subplot(3, 3, 2)
 plt.plot(sampsize, pr, color='0.2', ls='-', lw=2.0)
 plt.xlabel('Sample size', fontsize=8)
 plt.ylabel('correlation', fontsize=8)
-plt.tick_params(axis='both', labelsize=6)
+plt.tick_params(axis='both', labelsize=5)
+'''
 
-ax = fig.add_subplot(3, 3, 3)
+ax = fig.add_subplot(2, 2, 2)
 plt.plot(sampsize, pp, color='0.2', ls='-', lw=2.0)
-plt.xlabel('Sample size', fontsize=8)
-plt.ylabel('p-value', fontsize=8)
+plt.xlabel('Sample size', fontsize=10)
+plt.ylabel('p-value', fontsize=10)
 plt.tick_params(axis='both', labelsize=6)
 
-mydir = expanduser("~/GitHub/DistDecay/")
-path = mydir + "IBM/"
+mydir = expanduser("~/GitHub/DormancyDecay/")
 
 #### Final Format and Save #####################################################
-plt.subplots_adjust(wspace=0.45, hspace=0.4)
-plt.savefig(mydir + '/figs/FromSims/EnvGeoCorr.png',
+plt.subplots_adjust(wspace=0.4, hspace=0.4)
+plt.savefig(mydir + '/figs/FromSites/EnvGeoCorr.png',
     dpi=200, bbox_inches = "tight")
 plt.close()
