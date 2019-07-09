@@ -16,6 +16,8 @@ setwd("~/GitHub/DormancyDecay/empirical_analyses/DistanceDecay")
 require("simba")
 #install.packages("fossil")
 require("fossil")
+require("dplyr")
+require("picante")
 ```
 
 
@@ -57,6 +59,7 @@ act.com <- sweep(act.com, 1, rowSums(act.com), '/')
 all.com <- sweep(all.com, 1, rowSums(all.com), '/')
 ```
 
+
 ```{r}
 rowMeans(act.com)
 max(act.com)
@@ -76,7 +79,6 @@ geo.dist[which(!is.finite(geo.dist))] = NA
 
 # Define Environmental Matrix
 env.dat <- as.matrix(subset(env, select = c("canopy", "DO", "ORP", "pH", "Temp", "DOC", "TDS", "Color", "chla", "TP", "Depth", "Salinity", "SpC", "DON", "Diameter")))
-#env.dat <- as.matrix(subset(env, select = Diameter:TP))
 env.dat <- scale(env.dat, center = TRUE, scale = TRUE)
 
 # Conduct PCA
@@ -105,6 +107,39 @@ all.sore.dist <- 1 - vegdist(all.com, method="bray", binary=T)
 act.canb.dist <- 1 - vegdist(act.com, method="canberra", binary=F)
 all.canb.dist <- 1 - vegdist(all.com, method="canberra", binary=F)
 ```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+m_and_b <- function(com, dist, metric, bin1) {
+  
+  m <- 0
+  b <- 0
+  n <- 10
+  for (i in 1:n){
+    
+    com <- randomizeMatrix(com, null.model = "richness", iterations = 1000)
+    com.dist <- 1 - vegdist(com, method=metric, binary=bin1)
+    #dist <- sample(dist)
+    
+    lmResult <- lm(com.dist ~ dist)
+    b1 <- as.numeric(coef(lmResult)["(Intercept)"])
+    b1 <- ifelse(is.na(b1), 0, b1)
+    b <- b + b1
+    
+    m1 <- as.numeric(coef(lmResult)["dist"])
+    print(m1)
+    m1 <- ifelse(is.na(m1), 0, m1)
+    m <- m + m1
+    
+  }
+  
+  b <- b/n
+  m <- m/n
+  return(c(m,b))
+}
+
+```
+
 
 
 ```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
@@ -138,9 +173,15 @@ int1 <- round(coefficients(DD.act.env)[1], 3)
 p <- round(summary(DD.act.env)$coefficients[8],3)
 colors <- densCols(env.dist, act.bray.dist, colramp=clr)
 plot(env.dist, act.bray.dist, ylab="Similarity", pch=20,
-  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(act.bray.dist, max))))
 title(paste("Active: slope = ", slope1), line = 1, cex=1)
 abline(DD.act.env, col = "black", lwd=3)
+res <- m_and_b(act.com, env.dist, "bray", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
+
 
 
 # Make Plot for all pres-abs (env)
@@ -149,9 +190,15 @@ int2 <- round(coefficients(DD.all.env)[1], 3)
 p <- round(summary(DD.all.env)$coefficients[8], 3)
 colors <- densCols(env.dist, all.bray.dist, colramp=clr)
 plot(env.dist, all.bray.dist, ylab="Similarity", pch=20,
-  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(all.bray.dist, max))))
 title(paste("All: slope = ", slope2), line = 1, cex=2)
 abline(DD.all.env, col = "black", lwd=3)
+res <- m_and_b(all.com, env.dist, "bray", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
+
 
 # Make Plot for active pres-abs (geo)
 slope3 <- round(coefficients(DD.act.geo)[2], 3)
@@ -159,9 +206,14 @@ int3 <- round(coefficients(DD.act.geo)[1], 3)
 p <- round(summary(DD.act.geo)$coefficients[8],3)
 colors <- densCols(geo.dist, act.bray.dist, colramp=clr)
 plot(geo.dist, act.bray.dist, ylab="Similarity", pch=20,
-  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(act.bray.dist, max))))
 title(paste("Active: slope = ", slope3), line = 1, cex=1)
 abline(DD.act.geo, col = "black", lwd=3)
+res <- m_and_b(act.com, geo.dist, "bray", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Make Plot for all pres-abs (geo)
@@ -170,9 +222,14 @@ int4 <- round(coefficients(DD.all.geo)[1], 3)
 p <- round(summary(DD.all.geo)$coefficients[8], 3)
 colors <- densCols(geo.dist, all.bray.dist, colramp=clr)
 plot(geo.dist, all.bray.dist, ylab="Similarity", pch=20,
-  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(all.bray.dist, max))))
 title(paste("All: slope = ", slope4), line = 1, cex=1)
 abline(DD.all.geo, col = "black", lwd=3)
+res <- m_and_b(all.com, geo.dist, "bray", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 
@@ -200,6 +257,8 @@ print(c(int1, int2, int3, int4))
 100*(abs((int1-int2)/mean(c(int1, int2))))
 100*(abs((int3-int4)/mean(c(int3, int4))))
 ```
+
+
 
 
 ```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
@@ -233,9 +292,14 @@ int1 <- round(coefficients(DD.act.env)[1], 3)
 p <- round(summary(DD.act.env)$coefficients[8],3)
 colors <- densCols(env.dist, act.sore.dist, colramp=clr)
 plot(env.dist, act.sore.dist, ylab="Similarity", pch=20,
-  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(act.sore.dist, max))))
 title(paste("Active: slope = ", slope1), line = 1, cex=1)
 abline(DD.act.env, col = "black", lwd=3)
+res <- m_and_b(act.com, env.dist, "bray", TRUE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Make Plot for all pres-abs (env)
@@ -244,9 +308,15 @@ int2 <- round(coefficients(DD.all.env)[1], 3)
 p <- round(summary(DD.all.env)$coefficients[8], 3)
 colors <- densCols(env.dist, all.sore.dist, colramp=clr)
 plot(env.dist, all.sore.dist, ylab="Similarity", pch=20,
-  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(all.sore.dist, max))))
 title(paste("All: slope = ", slope2), line = 1, cex=2)
 abline(DD.all.env, col = "black", lwd=3)
+res <- m_and_b(all.com, env.dist, "bray", TRUE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
+
 
 # Make Plot for active pres-abs (geo)
 slope3 <- round(coefficients(DD.act.geo)[2], 3)
@@ -254,9 +324,14 @@ int3 <- round(coefficients(DD.act.geo)[1], 3)
 p <- round(summary(DD.act.geo)$coefficients[8],3)
 colors <- densCols(geo.dist, act.sore.dist, colramp=clr)
 plot(geo.dist, act.sore.dist, ylab="Similarity", pch=20,
-  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(act.sore.dist, max))))
 title(paste("Active: slope = ", slope3), line = 1, cex=1)
 abline(DD.act.geo, col = "black", lwd=3)
+res <- m_and_b(act.com, geo.dist, "bray", TRUE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Make Plot for all pres-abs (geo)
@@ -265,10 +340,14 @@ int4 <- round(coefficients(DD.all.geo)[1], 3)
 p <- round(summary(DD.all.geo)$coefficients[8], 3)
 colors <- densCols(geo.dist, all.sore.dist, colramp=clr)
 plot(geo.dist, all.sore.dist, ylab="Similarity", pch=20,
-  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(all.sore.dist, max))))
 title(paste("All: slope = ", slope4), line = 1, cex=1)
 abline(DD.all.geo, col = "black", lwd=3)
-
+res <- m_and_b(all.com, geo.dist, "bray", TRUE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Add X-Axis Label to Plot
@@ -328,9 +407,14 @@ int1 <- round(coefficients(DD.act.env)[1], 3)
 p <- round(summary(DD.act.env)$coefficients[8],3)
 colors <- densCols(env.dist, act.canb.dist, colramp=clr)
 plot(env.dist, act.canb.dist, ylab="Similarity", pch=20,
-  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(act.canb.dist, max))))
 title(paste("Active: slope = ", slope1), line = 1, cex=1)
 abline(DD.act.env, col = "black", lwd=3)
+res <- m_and_b(act.com, env.dist, "canberra", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Make Plot for all pres-abs (env)
@@ -339,9 +423,15 @@ int2 <- round(coefficients(DD.all.env)[1], 3)
 p <- round(summary(DD.all.env)$coefficients[8], 3)
 colors <- densCols(env.dist, all.canb.dist, colramp=clr)
 plot(env.dist, all.canb.dist, ylab="Similarity", pch=20,
-  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(all.canb.dist, max))))
 title(paste("All: slope = ", slope2), line = 1, cex=2)
 abline(DD.all.env, col = "black", lwd=3)
+res <- m_and_b(all.com, env.dist, "canberra", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
+
 
 # Make Plot for active pres-abs (geo)
 slope3 <- round(coefficients(DD.act.geo)[2], 3)
@@ -349,9 +439,14 @@ int3 <- round(coefficients(DD.act.geo)[1], 3)
 p <- round(summary(DD.act.geo)$coefficients[8],3)
 colors <- densCols(geo.dist, act.canb.dist, colramp=clr)
 plot(geo.dist, act.canb.dist, ylab="Similarity", pch=20,
-  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(act.canb.dist, max))))
 title(paste("Active: slope = ", slope3), line = 1, cex=1)
 abline(DD.act.geo, col = "black", lwd=3)
+res <- m_and_b(act.com, geo.dist, "canberra", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Make Plot for all pres-abs (geo)
@@ -360,9 +455,14 @@ int4 <- round(coefficients(DD.all.geo)[1], 3)
 p <- round(summary(DD.all.geo)$coefficients[8], 3)
 colors <- densCols(geo.dist, all.canb.dist, colramp=clr)
 plot(geo.dist, all.canb.dist, ylab="Similarity", pch=20,
-  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(all.canb.dist, max))))
 title(paste("All: slope = ", slope4), line = 1, cex=1)
 abline(DD.all.geo, col = "black", lwd=3)
+res <- m_and_b(all.com, geo.dist, "canberra", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 
@@ -390,14 +490,10 @@ print(c(int1, int2, int3, int4))
 
 
 
-
-
-
-
-
 ###################################################
 # Compare Env & Geo
 ###################################################
+
 
 
 ```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
@@ -431,9 +527,14 @@ int1 <- round(coefficients(DD.act.env)[1], 3)
 p <- round(summary(DD.act.env)$coefficients[8],3)
 colors <- densCols(env.dist, act.bray.dist, colramp=clr)
 plot(env.dist, act.bray.dist, ylab="Similarity", pch=20,
-  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(act.bray.dist, max))))
 title(paste("Active: slope = ", slope1), line = 1, cex=1)
 abline(DD.act.env, col = "black", lwd=3)
+res <- m_and_b(act.com, env.dist, "bray", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Make Plot for all pres-abs (env)
@@ -442,9 +543,15 @@ int2 <- round(coefficients(DD.all.env)[1], 3)
 p <- round(summary(DD.all.env)$coefficients[8], 3)
 colors <- densCols(env.dist, all.bray.dist, colramp=clr)
 plot(env.dist, all.bray.dist, ylab="Similarity", pch=20,
-  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(all.bray.dist, max))))
 title(paste("All: slope = ", slope2), line = 1, cex=2)
 abline(DD.all.env, col = "black", lwd=3)
+res <- m_and_b(all.com, env.dist, "bray", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
+
 
 # Make Plot for active pres-abs (geo)
 slope3 <- round(coefficients(DD.act.geo)[2], 3)
@@ -452,9 +559,14 @@ int3 <- round(coefficients(DD.act.geo)[1], 3)
 p <- round(summary(DD.act.geo)$coefficients[8],3)
 colors <- densCols(geo.dist, act.bray.dist, colramp=clr)
 plot(geo.dist, act.bray.dist, ylab="Similarity", pch=20,
-  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(act.bray.dist, max))))
 title(paste("Active: slope = ", slope3), line = 1, cex=1)
 abline(DD.act.geo, col = "black", lwd=3)
+res <- m_and_b(act.com, geo.dist, "bray", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Make Plot for all pres-abs (geo)
@@ -463,9 +575,14 @@ int4 <- round(coefficients(DD.all.geo)[1], 3)
 p <- round(summary(DD.all.geo)$coefficients[8], 3)
 colors <- densCols(geo.dist, all.bray.dist, colramp=clr)
 plot(geo.dist, all.bray.dist, ylab="Similarity", pch=20,
-  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(all.bray.dist, max))))
 title(paste("All: slope = ", slope4), line = 1, cex=1)
 abline(DD.all.geo, col = "black", lwd=3)
+res <- m_and_b(all.com, geo.dist, "bray", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 
@@ -525,9 +642,14 @@ int1 <- round(coefficients(DD.act.env)[1], 3)
 p <- round(summary(DD.act.env)$coefficients[8],3)
 colors <- densCols(env.dist, act.sore.dist, colramp=clr)
 plot(env.dist, act.sore.dist, ylab="Similarity", pch=20,
-  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(act.sore.dist, max))))
 title(paste("Active: slope = ", slope1), line = 1, cex=1)
 abline(DD.act.env, col = "black", lwd=3)
+res <- m_and_b(act.com, env.dist, "bray", TRUE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Make Plot for all pres-abs (env)
@@ -536,9 +658,15 @@ int2 <- round(coefficients(DD.all.env)[1], 3)
 p <- round(summary(DD.all.env)$coefficients[8], 3)
 colors <- densCols(env.dist, all.sore.dist, colramp=clr)
 plot(env.dist, all.sore.dist, ylab="Similarity", pch=20,
-  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(all.sore.dist, max))))
 title(paste("All: slope = ", slope2), line = 1, cex=2)
 abline(DD.all.env, col = "black", lwd=3)
+res <- m_and_b(all.com, env.dist, "bray", TRUE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
+
 
 # Make Plot for active pres-abs (geo)
 slope3 <- round(coefficients(DD.act.geo)[2], 3)
@@ -546,9 +674,14 @@ int3 <- round(coefficients(DD.act.geo)[1], 3)
 p <- round(summary(DD.act.geo)$coefficients[8],3)
 colors <- densCols(geo.dist, act.sore.dist, colramp=clr)
 plot(geo.dist, act.sore.dist, ylab="Similarity", pch=20,
-  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(act.sore.dist, max))))
 title(paste("Active: slope = ", slope3), line = 1, cex=1)
 abline(DD.act.geo, col = "black", lwd=3)
+res <- m_and_b(act.com, geo.dist, "bray", TRUE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Make Plot for all pres-abs (geo)
@@ -557,10 +690,14 @@ int4 <- round(coefficients(DD.all.geo)[1], 3)
 p <- round(summary(DD.all.geo)$coefficients[8], 3)
 colors <- densCols(geo.dist, all.sore.dist, colramp=clr)
 plot(geo.dist, all.sore.dist, ylab="Similarity", pch=20,
-  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(all.sore.dist, max))))
 title(paste("All: slope = ", slope4), line = 1, cex=1)
 abline(DD.all.geo, col = "black", lwd=3)
-
+res <- m_and_b(all.com, geo.dist, "bray", TRUE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Add X-Axis Label to Plot
@@ -584,6 +721,8 @@ print(c(int1, int3, int2, int4))
 100*(abs((int1-int3)/mean(c(int1, int3))))
 100*(abs((int2-int4)/mean(c(int2, int4))))
 ```
+
+
 
 
 ```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
@@ -617,9 +756,14 @@ int1 <- round(coefficients(DD.act.env)[1], 3)
 p <- round(summary(DD.act.env)$coefficients[8],3)
 colors <- densCols(env.dist, act.canb.dist, colramp=clr)
 plot(env.dist, act.canb.dist, ylab="Similarity", pch=20,
-  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(act.canb.dist, max))))
 title(paste("Active: slope = ", slope1), line = 1, cex=1)
 abline(DD.act.env, col = "black", lwd=3)
+res <- m_and_b(act.com, env.dist, "canberra", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Make Plot for all pres-abs (env)
@@ -628,9 +772,15 @@ int2 <- round(coefficients(DD.all.env)[1], 3)
 p <- round(summary(DD.all.env)$coefficients[8], 3)
 colors <- densCols(env.dist, all.canb.dist, colramp=clr)
 plot(env.dist, all.canb.dist, ylab="Similarity", pch=20,
-  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(all.canb.dist, max))))
 title(paste("All: slope = ", slope2), line = 1, cex=2)
 abline(DD.all.env, col = "black", lwd=3)
+res <- m_and_b(all.com, env.dist, "canberra", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
+
 
 # Make Plot for active pres-abs (geo)
 slope3 <- round(coefficients(DD.act.geo)[2], 3)
@@ -638,9 +788,14 @@ int3 <- round(coefficients(DD.act.geo)[1], 3)
 p <- round(summary(DD.act.geo)$coefficients[8],3)
 colors <- densCols(geo.dist, act.canb.dist, colramp=clr)
 plot(geo.dist, act.canb.dist, ylab="Similarity", pch=20,
-  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(act.canb.dist, max))))
 title(paste("Active: slope = ", slope3), line = 1, cex=1)
 abline(DD.act.geo, col = "black", lwd=3)
+res <- m_and_b(act.com, geo.dist, "canberra", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Make Plot for all pres-abs (geo)
@@ -649,10 +804,14 @@ int4 <- round(coefficients(DD.all.geo)[1], 3)
 p <- round(summary(DD.all.geo)$coefficients[8], 3)
 colors <- densCols(geo.dist, all.canb.dist, colramp=clr)
 plot(geo.dist, all.canb.dist, ylab="Similarity", pch=20,
-  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2)
+  xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
+  ylim=c(0, max(sapply(all.canb.dist, max))))
 title(paste("All: slope = ", slope4), line = 1, cex=1)
 abline(DD.all.geo, col = "black", lwd=3)
-
+res <- m_and_b(all.com, geo.dist, "canberra", FALSE)
+slope <- res[1]
+intercept <- res[2]
+abline(a=intercept, b=slope, col = "red", lwd=2)
 
 
 # Add X-Axis Label to Plot

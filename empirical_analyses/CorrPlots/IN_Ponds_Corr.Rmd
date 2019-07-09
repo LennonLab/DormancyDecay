@@ -71,20 +71,18 @@ title(main="Results from molecular data", line=1, outer=T, cex.main=2)
 
 ```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
 # Load Environmental and Geographical data
-env <- read.table("~/GitHub/DistDecay/data/Environmental/20130801_INPondDataMod.csv", sep = ",", header = TRUE)
+env <- read.table("~/GitHub/DistDecay/data/Environmental/20130801_PondDataMod.csv", 
+                  sep = ",", header = TRUE)
 env <- env[complete.cases(env),]
 env[which(env$Sample_ID == "HNF133"), ]["SpC"] <- 55
 env$chla <- log10(env$chla)
-
-#e <- env$Elevation
-#mean(e)
-#sd(e)/sqrt(length(e))
 ```
 
 
 ```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
 # Load Flow Cytometry Data
-flo <- read.table("~/GitHub/DistDecay/data/FlowCytometry/INPonds_flowdat.csv", sep = ",", header = TRUE)
+flo <- read.table("~/GitHub/DistDecay/data/FlowCytometry/INPonds_flowdat.csv", 
+                  sep = ",", header = TRUE)
 flo <- flo[complete.cases(flo),]
 
 levels(flo$pond) <- sub("_", "", levels(flo$pond))

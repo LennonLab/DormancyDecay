@@ -1,0 +1,192 @@
+---
+title: "Supplemental Figures: Compositional similarity vs. Geographic distance"
+geometry: margin=2.54cm
+date: "November 7, 2015"
+output: pdf_document
+header-includes: \usepackage{array}
+---
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+# Retrieve and set the working directory
+rm(list=ls())
+getwd()
+setwd("~/GitHub/DormancyDecay/analyses/DistanceDecay")
+
+# Load packages
+require("simba")
+require("fossil")
+require("dplyr")
+load(file = "~/GitHub/DormancyDecay/data/MicrobialCommunity/INPond_Initial.RData")
+
+# Load Environmental and Geographical Data
+env <- read.table("~/GitHub/DormancyDecay/data/Environmental/20130801_INPondDataMod.csv", sep = ",", header = TRUE)
+env <- env[complete.cases(env),]
+env[which(env$Sample_ID == "HNF133"), ]["SpC"] <- 55
+env[which(env$Sample_ID == "YSF46"), ]["lat"] <- 39.1186
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+# Select DNA Data: Use the `grep()` Command and Rename with `gsub()`
+# The active portion, based on cDNA
+act.com <- Pond97[grep("*-cDNA", rownames(Pond97)), ]
+rownames(act.com) <- gsub("\\-cDNA", "", rownames(act.com))
+
+# The community without respect to active or not, 16S rRNA gene sequences
+all.com <- Pond97[grep("*-DNA", rownames(Pond97)), ]
+rownames(all.com) <- gsub("\\-DNA", "", rownames(all.com))
+
+# Remove Sites Not in the Environmental Data Set
+act.com <- act.com[rownames(act.com)  %in% env$Sample_ID, ]
+all.com <- all.com[rownames(all.com)  %in% env$Sample_ID, ]
+
+# Remove sites not shared between matrices
+all.com <- all.com[rownames(all.com)  %in% row.names(act.com),]
+env <- env[env$Sample_ID %in% row.names(act.com),]
+
+# Remove Zero-Occurrence Taxa
+act.com <- act.com[,colSums(act.com) > 0]
+all.com <- all.com[,colSums(all.com) > 0]
+
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
+# Use n most abundant taxa
+metric <- "bray"
+ns <- c(1000, 4000, 8000, 12000, 16000, 21000)
+
+df.all.env.sim.1 <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
+df.all.geo.sim.1 <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
+df.act.env.sim.1 <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
+df.act.geo.sim.1 <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
+
+for (i in c(1:100)){
+  print(i)
+  all.env.sim <- c() 
+  all.geo.sim <- c()
+  act.env.sim <- c()
+  act.geo.sim <- c()
+
+  for (n in ns){
+    env.dat <- env
+    cols <- as.vector(sample(1:21568, n))
+    
+    # Geographic Distances (Kilometers) Among Ponds
+    long.lat <- as.matrix(cbind(env.dat$long, env.dat$lat))
+    geo.dist <- earth.dist(long.lat, dist = TRUE)
+    geo.dist <- geo.dist/max(geo.dist)
+    geo.dist[which(!is.finite(geo.dist))] = NA
+
+    env.dat <- as.matrix(subset(env, select = Elevation:TP))
+    env.dat <- as.matrix(env.dat)
+    env.dat <- scale(env.dat)
+    
+    # Conduct PCA
+    pca <- princomp(env.dat)
+    scores <- as.data.frame(pca$scores)
+    env.dist <- vegdist(scores[, 1], "euclidean")
+    env.dist <- env.dist/max(env.dist)
+    env.dist[which(!is.finite(env.dist))] = NA
+
+    all.com2 <- all.com[, cols]
+    act.com2 <- act.com[, cols]
+
+    # Use relative abundance
+    act.com2 <- sweep(act.com2, 1, rowSums(act.com2), '/')
+    all.com2 <- sweep(all.com2, 1, rowSums(all.com2), '/')
+  
+    # Taxonomic Distances Among Ponds
+    act.weighted.dist <- 1 - vegdist(act.com2, method=metric, binary=F)
+    all.weighted.dist <- 1 - vegdist(all.com2, method=metric, binary=F)
+  
+    # Regression for active weighted
+    DD.act.env <- lm(act.weighted.dist ~ env.dist)
+    act.env.sim <- c(act.env.sim, round(coefficients(DD.act.env)[2], 4))
+  
+    # Regression for all weighted
+    DD.all.env <- lm(all.weighted.dist ~ env.dist)
+    all.env.sim <- c(all.env.sim, round(coefficients(DD.all.env)[2], 4))
+  
+    # Regression for active weighted
+    DD.act.geo <- lm(act.weighted.dist ~ geo.dist)
+    act.geo.sim <- c(act.geo.sim, round(coefficients(DD.act.geo)[2], 4))
+  
+    # Regression for all weighted
+    DD.all.geo <- lm(all.weighted.dist ~ geo.dist)
+    all.geo.sim <- c(all.geo.sim, round(coefficients(DD.all.geo)[2], 4))
+  
+  }
+    
+  df.all.env.sim.1 <- rbind(df.all.env.sim.1, all.env.sim)
+  df.all.geo.sim.1 <- rbind(df.all.geo.sim.1, all.geo.sim)
+  df.act.env.sim.1 <- rbind(df.act.env.sim.1, act.env.sim)
+  df.act.geo.sim.1 <- rbind(df.act.geo.sim.1, act.geo.sim)
+}
+```
+
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
+plot.new()
+file <- paste("~/GitHub/DormancyDecay/figs/FromSites/OTUs_effect.png", sep="")
+png(filename=file, width=8, height=4, units="in", res=600, pointsize=10)
+
+par(mfrow=c(1, 2), mar = c(5,5,3,1), oma =c(0,0,0,0))
+
+xs <- c(1000, 4000, 8000, 12000, 16000, 21000)
+xlabel <- "Number of randomly chosen OTUs"
+
+# Make Plot for Environmental DDRs
+avg1 <- colMeans(df.all.env.sim.1)
+sem1 <- sapply(df.all.env.sim.1, function(x)sd(x)/sqrt(length(x)))
+
+avg2 <- colMeans(df.act.env.sim.1)
+sem2 <- sapply(df.act.env.sim.1, function(x)sd(x)/sqrt(length(x)))
+
+ymin1 <- c(min(avg1 - sem1))
+ymin2 <- c(min(avg2 - sem2))
+ymax1 <- c(max(avg1 + sem1))
+ymax2 <- c(max(avg2 + sem2))
+ymin <- min(c(ymin1, ymin2))
+ymax <- max(c(ymax1, ymax2))
+
+plot(xs, avg1, ylab="DDR slope", xlab=xlabel,
+  col = 'blue', cex=1, cex.lab=1.4, cex.axis = 1, pch=16, ylim=c(ymin, ymax))
+text(19000, -0.235, labels = 'total', cex = 1.5, col = 'blue')
+arrows(xs, avg1 - sem1, xs, avg1 + sem1, length = 0.05, angle=90, code=3, col='blue')
+
+points(xs, avg2, ylab="DDR slope", xlab=xlabel,
+  col = 'red', cex=1, cex.lab=1.4, cex.axis = 1, pch=16, ylim=c(ymin, ymax))
+text(19000, -0.3, labels = 'active', cex = 1.5, col = 'red')
+arrows(xs, avg2 - sem2, xs, avg2 + sem2, length = 0.05, angle=90, code=3, col='red')
+title(main = list("Environmental", cex=1.7))
+
+
+# Make Plot for Geographic DDRs
+avg1 <- colMeans(df.all.geo.sim.1)
+sem1 <- sapply(df.all.geo.sim.1, function(x)sd(x)/sqrt(length(x)))
+avg2 <- colMeans(df.act.geo.sim.1)
+sem2 <- sapply(df.act.geo.sim.1, function(x)sd(x)/sqrt(length(x)))
+
+ymin1 <- c(min(avg1 - sem1))
+ymin2 <- c(min(avg2 - sem2))
+ymax1 <- c(max(avg1 + sem1))
+ymax2 <- c(max(avg2 + sem2))
+ymin <- min(c(ymin1, ymin2))
+ymax <- max(c(ymax1, ymax2))
+
+plot(xs, avg1, ylab="DDR slope", xlab=xlabel,
+  col = 'blue', cex=1, cex.lab=1.4, cex.axis = 1, pch=16, ylim=c(ymin, ymax))
+text(19000, -0.12, labels = 'total', cex = 1.5, col = 'blue')
+arrows(xs, avg1 - sem1, xs, avg1 + sem1, length = 0.05, angle=90, code=3, col='blue')
+
+
+points(xs, avg2, ylab="DDR slope", xlab=xlabel,
+  col = 'red', cex=1, cex.lab=1.4, cex.axis = 1, pch=16, ylim=c(ymin, ymax))
+text(19000, -0.165, labels = 'active', cex = 1.5, col = 'red')
+arrows(xs, avg2 - sem2, xs, avg2 + sem2, length = 0.05, angle=90, code=3, col='red')
+title(main = list("Geographical", cex=1.7))
+
+dev.off()
+```

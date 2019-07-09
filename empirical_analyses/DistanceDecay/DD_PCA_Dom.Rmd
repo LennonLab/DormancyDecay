@@ -15,21 +15,18 @@ setwd("~/GitHub/DistDecay/analyses/DistanceDecay")
 # Load packages
 require("simba")
 require("fossil")
-require("dplyr")
 load(file = "~/GitHub/DistDecay/data/MicrobialCommunity/INPond_Initial.RData")
-#load(file = "~/GitHub/DistDecay/data/DistDecayDom-1x2-Data.RData")
 
 # Load Environmental and Geographical Data
-env <- read.table("~/GitHub/DistDecay/data/Environmental/20130801_PondDataMod.csv", sep = ",", header = TRUE)
+env <- read.table("~/GitHub/DistDecay/data/Environmental/20130801_INPondData.csv", sep = ",", header = TRUE)
 env <- env[complete.cases(env),]
 env[which(env$Sample_ID == "HNF133"), ]["SpC"] <- 55
-#env$chla <- log(env$chla)
-#env$TP <- log(env$TP)
-#env$canopy <- log(env$canopy)
-#env$DON <- log(env$DON)
-#env$DOC <- log(env$DOC)
-#env$Color <- log(env$Color)
-env[which(env$Sample_ID == "YSF46"), ]["lat"] <- 39.1186
+env$chla <- log(env$chla)
+env$TP <- log(env$TP)
+env$canopy <- log(env$canopy)
+env$DON <- log(env$DON)
+env$DOC <- log(env$DOC)
+env$Color <- log(env$Color)
 ```
 
 
@@ -52,59 +49,136 @@ all.com <- all.com[rownames(all.com)  %in% row.names(act.com),]
 env <- env[env$Sample_ID %in% row.names(act.com),]
 
 # Remove Zero-Occurrence Taxa
-act.com2 <- act.com[,colSums(act.com) > 0]
-all.com2 <- all.com[,colSums(all.com) > 0]
+act.com <- act.com[,colSums(act.com) > 0]
+all.com <- all.com[,colSums(all.com) > 0]
+```
 
-# Use relative abundances
-#act.com <- sweep(act.com, 1, rowSums(act.com), '/')
-#all.com <- sweep(all.com, 1, rowSums(all.com), '/')
 
-#act.com2 <- sweep(act.com2, 1, rowSums(act.com2), '/')
-#all.com2 <- sweep(all.com2, 1, rowSums(all.com2), '/')
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
+file <- paste("~/GitHub/DistDecay/figs/Abundance_vs_Occurrence.png", sep="")
+png(filename=file, width=5, height=5, units="in", res=600, pointsize=10)
+
+par(mfrow=c(2, 2), mgp=c(3.1,1,0), mar = c(5,6,3,1), oma =c(0,0,0,0))
+
+act.com2 <- sweep(act.com, 1, rowSums(act.com), '/')
+all.com2 <- sweep(all.com, 1, rowSums(all.com), '/')
+
+avg.ab.all <- log10(colMeans(all.com2))
+avg.ab.act <- log10(colMeans(act.com2))
+max.ab.all <- log10(apply(all.com2, MARGIN=c(2), max))
+max.ab.act <- log10(apply(act.com2, MARGIN=c(2), max))
+oc.all <- log10(colMeans(all.com2!=0))
+oc.act <- log10(colMeans(act.com2!=0))
+
+smoothScatter(oc.all, avg.ab.all, 
+  ylab="Avg abundance",
+  xlab="Occurrence",
+  col = NULL, cex=1, cex.lab=1.2, cex.axis = 1,
+  colramp = colorRampPalette(c("white", "white", "#007FFF", "cyan",
+                     "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000")))
+title(paste("Total"), line = 1, cex=2)
+
+
+smoothScatter(oc.act, avg.ab.act,
+  ylab="Max abundance",
+  xlab="Occurrence",
+  col = NULL, cex=1, cex.lab=1.2, cex.axis = 1,
+  colramp = colorRampPalette(c("white", "white", "#007FFF", "cyan",
+                     "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000")))
+title(paste("Active"), line = 1, cex=2)
+
+smoothScatter(oc.all, max.ab.all, 
+  ylab="Max abundance",
+  xlab="Occurrence",
+  col = NULL, cex=1, cex.lab=1.2, cex.axis = 1,
+  colramp = colorRampPalette(c("white", "white", "#007FFF", "cyan",
+                     "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000")))
+title(paste("Total"), line = 1, cex=2)
+
+smoothScatter(oc.act, max.ab.act, 
+  ylab="Avg abundance",
+  xlab="Occurrence",
+  col = NULL, cex=1, cex.lab=1.2, cex.axis = 1,
+  colramp = colorRampPalette(c("white", "white", "#007FFF", "cyan",
+                     "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000")))
+title(paste("Active"), line = 1, cex=2)
+dev.off()
+```
+
+
+```{r}
+# Define Environmental Matrix
+env.dat <- as.matrix(subset(env, select = c("canopy", "DO", "ORP", "pH", "Temp", "DOC", "DON", "TDS", "Color", "chla", "TP", "Depth", "Salinity", "SpC")))
+
+#env.dat <- as.matrix(subset(env, select = c("DOC", "Temp", "chla", "Depth", "pH", "DON")))
+env.dat <- scale(env.dat)
+
+# Conduct PCA
+pca <- princomp(env.dat)
+scores <- as.data.frame(pca$scores)
+env.dist <- log(vegdist(scores, "euclidean"))
+env.dist[which(!is.finite(env.dist))] = NA
 ```
 
 
 ```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
 # Use n most abundant taxa
 metric <- "bray"
+
+#ns <- c(50, 60, 70, 80, 90, 100, 140, 180,
+#        200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500,
+#        2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
+#        12000, 14000, 16000, 18000, 20000, 21500)
+
+#ns <- c(10, 100, 1000, 10000)
 ns <- c(10, 32, 100, 316, 1000, 3162, 10000, dim(act.com)[2])
 
-df.all.env.bray.1 <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
-df.all.geo.bray.1 <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
-df.act.env.bray.1 <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
-df.act.geo.bray.1 <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
+df.all.env.bray <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
+df.all.geo.bray <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
+df.act.env.bray <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
+df.act.geo.bray <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
 
-for (i in c(1:1)){
-  print(i)
+df.all.env.sor <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
+df.all.geo.sor <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
+df.act.env.sor <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
+df.act.geo.sor <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
+
+
+for (i in c(1:1000)){
+
   all.env.bray <- c() 
   all.geo.bray <- c()
   act.env.bray <- c()
   act.geo.bray <- c()
 
+  all.env.sor <- c() 
+  all.geo.sor <- c()
+  act.env.sor <- c()
+  act.geo.sor <- c()
+
   for (n in ns){
-    #rows <- sample(c(1:49), 49, replace=FALSE)
-    env.dat <- env
+    rows <- sample(c(1:49), 13, replace=FALSE)
+    env.dat <- env[rows, ]
     
     # Geographic Distances (Kilometers) Among Ponds
     long.lat <- as.matrix(cbind(env.dat$long, env.dat$lat))
     geo.dist <- earth.dist(long.lat, dist = TRUE)
-    geo.dist <- geo.dist/max(geo.dist)
+    geo.dist <- log(geo.dist)
     geo.dist[which(!is.finite(geo.dist))] = NA
 
-    env.dat <- as.matrix(subset(env, select = c("canopy", "DO", "ORP", "pH", "Temp",
-              "DOC", "DON", "TDS", "Color", "chla", "TP", "Depth", "Salinity", "Diameter")))
+    env.dat <- as.matrix(subset(env.dat, select = c("canopy", "DO", "ORP", "pH",
+      "Temp", "DOC", "DON", "TDS", "Color", "chla", "TP", "Depth", "Salinity")))
     env.dat <- as.matrix(env.dat)
     env.dat <- scale(env.dat)
     
     # Conduct PCA
     pca <- princomp(env.dat)
     scores <- as.data.frame(pca$scores)
-    env.dist <- vegdist(scores[, 1], "euclidean")
-    env.dist <- env.dist/max(env.dist)
+    env.dist <- log(vegdist(scores, "euclidean"))
     env.dist[which(!is.finite(env.dist))] = NA
 
-    all.com2 <- all.com[, 1:n]
-    act.com2 <- act.com[, 1:n]
+    all.com2 <- all.com[rows, 1:n]
+    act.com2 <- act.com[rows, 1:n]
   
     #act.com2 <- act.com2[,order(colMeans(-act.com2))]
     #act.com2 <- act.com2[,order(colSums(-act.com2))]
@@ -119,9 +193,12 @@ for (i in c(1:1)){
     all.com2 <- sweep(all.com2, 1, rowSums(all.com2), '/')
   
     # Taxonomic Distances Among Ponds
-    act.weighted.dist <- 1 - vegdist(act.com2, method=metric, binary=F)
-    all.weighted.dist <- 1 - vegdist(all.com2, method=metric, binary=F)
+    act.weighted.dist <- log(1 - vegdist(act.com2, method=metric, binary=F))
+    all.weighted.dist <- log(1 - vegdist(all.com2, method=metric, binary=F))
   
+    act.presabs.dist <- log(1 - vegdist(act.com2, method=metric, binary=T))
+    all.presabs.dist <- log(1 - vegdist(all.com2, method=metric, binary=T))
+
     # Regression for active weighted
     DD.act.env <- lm(act.weighted.dist ~ env.dist)
     act.env.bray <- c(act.env.bray, round(coefficients(DD.act.env)[2], 4))
@@ -138,171 +215,169 @@ for (i in c(1:1)){
     DD.all.geo <- lm(all.weighted.dist ~ geo.dist)
     all.geo.bray <- c(all.geo.bray, round(coefficients(DD.all.geo)[2], 4))
   
+    # Regression for presence only
+    DD.act.env <- lm(act.presabs.dist ~ env.dist)
+    act.env.sor <- c(act.env.sor, round(coefficients(DD.act.env)[2], 4))
+  
+    # Regression for presence only
+    DD.all.env <- lm(all.presabs.dist ~ env.dist)
+    all.env.sor <- c(all.env.sor, round(coefficients(DD.all.env)[2], 4))
+  
+    # Regression for presence only
+    DD.act.geo <- lm(act.presabs.dist ~ geo.dist)
+    act.geo.sor <- c(act.geo.sor, round(coefficients(DD.act.geo)[2], 4))
+  
+    # Regression for presence only
+    DD.all.geo <- lm(all.presabs.dist ~ geo.dist)
+    all.geo.sor <- c(all.geo.sor, round(coefficients(DD.all.geo)[2], 4))
   }
     
-  df.all.env.bray.1 <- rbind(df.all.env.bray.1, all.env.bray)
-  df.all.geo.bray.1 <- rbind(df.all.geo.bray.1, all.geo.bray)
-  df.act.env.bray.1 <- rbind(df.act.env.bray.1, act.env.bray)
-  df.act.geo.bray.1 <- rbind(df.act.geo.bray.1, act.geo.bray)
+  
+  df.all.env.bray <- rbind(df.all.env.bray, all.env.bray)
+  df.all.geo.bray <- rbind(df.all.geo.bray, all.geo.bray)
+  df.act.env.bray <- rbind(df.act.env.bray, act.env.bray)
+  df.act.geo.bray <- rbind(df.act.geo.bray, act.geo.bray)
+
+  df.all.env.sor <- rbind(df.all.env.sor, all.env.sor)
+  df.all.geo.sor <- rbind(df.all.geo.sor, all.geo.sor)
+  df.act.env.sor <- rbind(df.act.env.sor, act.env.sor)
+  df.act.geo.sor <- rbind(df.act.geo.sor, act.geo.sor)
 }
 ```
 
 
 
-```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
-# Use n most abundant taxa
-metric <- "bray"
-ns <- c(13, 18, 23, 28, 33, 38, 43, 48)
-
-df.all.env.bray.2 <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
-df.all.geo.bray.2 <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
-df.act.env.bray.2 <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
-df.act.geo.bray.2 <- as.data.frame(setNames(replicate(length(ns), numeric(0)), sprintf("%.f", ns)))
-
-for (i in c(1:10)){
-  print(i)
-  all.env.bray <- c() 
-  all.geo.bray <- c()
-  act.env.bray <- c()
-  act.geo.bray <- c()
-
-  for (n in ns){
-    rows <- as.numeric(sample(c(1:49), n, replace=FALSE))
-    env.dat <- env[rows, ]
-    
-    # Geographic Distances (Kilometers) Among Ponds
-    long.lat <- as.matrix(cbind(env.dat$long, env.dat$lat))
-    geo.dist <- earth.dist(long.lat, dist = TRUE)
-    geo.dist <- geo.dist/max(geo.dist)
-    geo.dist[which(!is.finite(geo.dist))] = NA
-
-    env.dat <- as.matrix(subset(env.dat, select = c("canopy", "DO", "ORP", "pH",
-      "Temp", "DOC", "DON", "TDS", "Color", "chla", "TP", "Depth", "Salinity")))
-    env.dat <- as.matrix(env.dat)
-    env.dat <- scale(env.dat)
-    
-    # Conduct PCA
-    pca <- princomp(env.dat)
-    scores <- as.data.frame(pca$scores)
-    env.dist <- vegdist(scores[, 1], "euclidean")
-    env.dist <- env.dist/max(env.dist)
-    env.dist[which(!is.finite(env.dist))] = NA
-
-    all.com2 <- all.com[rows, ]
-    act.com2 <- act.com[rows, ]
-  
-    # Use relative abundance
-    act.com2 <- sweep(act.com2, 1, rowSums(act.com2), '/')
-    all.com2 <- sweep(all.com2, 1, rowSums(all.com2), '/')
-  
-    # Taxonomic Distances Among Ponds
-    act.weighted.dist <- 1 - vegdist(act.com2, method=metric, binary=F)
-    all.weighted.dist <- 1 - vegdist(all.com2, method=metric, binary=F)
-  
-    # Regression for active weighted
-    DD.act.env <- lm(act.weighted.dist ~ env.dist)
-    act.env.bray <- c(act.env.bray, round(coefficients(DD.act.env)[2], 4))
-  
-    # Regression for all weighted
-    DD.all.env <- lm(all.weighted.dist ~ env.dist)
-    all.env.bray <- c(all.env.bray, round(coefficients(DD.all.env)[2], 4))
-  
-    # Regression for active weighted
-    DD.act.geo <- lm(act.weighted.dist ~ geo.dist)
-    act.geo.bray <- c(act.geo.bray, round(coefficients(DD.act.geo)[2], 4))
-  
-    # Regression for all weighted
-    DD.all.geo <- lm(all.weighted.dist ~ geo.dist)
-    all.geo.bray <- c(all.geo.bray, round(coefficients(DD.all.geo)[2], 4))
-  }
-  
-  df.all.env.bray.2 <- rbind(df.all.env.bray.2, all.env.bray)
-  df.all.geo.bray.2 <- rbind(df.all.geo.bray.2, all.geo.bray)
-  df.act.env.bray.2 <- rbind(df.act.env.bray.2, act.env.bray)
-  df.act.geo.bray.2 <- rbind(df.act.geo.bray.2, act.geo.bray)
-}
-```
-
 
 ```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
-plot.new()
-file <- paste("~/GitHub/DistDecay/figs/Fig2-DDR-v2x2-SitesAndOTUs.png", sep="")
-png(filename=file, width=6, height=6, units="in", res=600, pointsize=10)
+file <- paste("~/GitHub/DistDecay/figs/Fig2-DDR-v2x2.png", sep="")
+png(filename=file, width=5, height=5, units="in", res=600, pointsize=10)
 
 par(mfrow=c(2, 2), mar = c(5,5,3,1), oma =c(0,0,0,0))
 
-xs <- log10(c(10, 32, 100, 316, 1000, 3162, 10000, dim(act.com)[2]))
-xlabel <- "Number of OTUs, log10"
+xs <- log10(ns-1)
+xlabel <- "ln(sampling depth)"
 
 # Make Plot for Environmental DDRs
-avg <- colMeans(df.all.env.bray.1)
-sem <- sapply(df.all.env.bray.1, function(x)sd(x)/sqrt(length(x)))
-plot(xs, colMeans(df.all.env.bray.1), ylab="DDR slope", xlab=xlabel,
-  col = 'blue', cex=1, cex.lab=1.2, cex.axis = 1, pch=16, ylim=c(-0.6, -0.2))
-text(2.2, -0.25, labels = 'total', cex = 1, col = 'blue')
+avg <- colMeans(df.all.env.bray)
+sem <- sapply(df.all.env.bray, function(x)sd(x)/sqrt(length(x)))
+plot(xs, colMeans(df.all.env.bray), ylab="DDR slope", xlab=xlabel,
+  col = 'blue', cex=1, cex.lab=1.2, cex.axis = 1, pch=16,
+  ylim=c(-0.55, -0.35))
 arrows(xs, avg - sem, xs, avg + sem, length = 0.05, angle=90, code=3, col='blue')
 
-avg <- colMeans(df.act.env.bray.1)
-sem <- sapply(df.act.env.bray.1, function(x)sd(x)/sqrt(length(x)))
-points(xs, colMeans(df.act.env.bray.1), ylab="DDR slope", xlab=xlabel,
+avg <- colMeans(df.act.env.bray)
+sem <- sapply(df.act.env.bray, function(x)sd(x)/sqrt(length(x)))
+points(xs, colMeans(df.act.env.bray), ylab="DDR slope", xlab=xlabel,
   col = 'red', cex=1, cex.lab=1.2, cex.axis = 1, pch=16)
-text(2.2, -0.42, labels = 'active', cex = 1, col = 'red')
 arrows(xs, avg - sem, xs, avg + sem, length = 0.05, angle=90, code=3, col='red')
-title(paste("Environmental"), line = 1, cex=2)
+#legend(2.0, -0.004, legend=c("total", "active"),
+#       col=c("blue", "red"), pch=16, cex=1,
+#       box.lty=0)
+title(paste("Environmental, Bray"), line = 1, cex=2)
+
+
+# Make Plot for Environmental DDRs
+avg <- colMeans(df.all.env.sor)
+sem <- sapply(df.all.env.sor, function(x)sd(x)/sqrt(length(x)))
+plot(xs, colMeans(df.all.env.sor), ylab="DDR slope", xlab=xlabel,
+  col = 'blue', cex=1, cex.lab=1.2, cex.axis = 1, pch=16,
+  ylim=c(-0.2, 0.0))
+arrows(xs, avg - sem, xs, avg + sem, length = 0.05, angle=90, code=3, col='blue')
+
+avg <- colMeans(df.act.env.sor)
+sem <- sapply(df.act.env.sor, function(x)sd(x)/sqrt(length(x)))
+points(xs, colMeans(df.act.env.sor), ylab="DDR slope", xlab=xlabel,
+  col = 'red', cex=1, cex.lab=1.2, cex.axis = 1, pch=16)
+arrows(xs, avg - sem, xs, avg + sem, length = 0.05, angle=90, code=3, col='red')
+legend(1.1, -0.14, legend=c("total", "active"),
+       col=c("blue", "red"), pch=16, cex=1,
+       box.lty=0)
+title(paste("Environmental, Sorensen"), line = 1, cex=2)
 
 
 # Make Plot for Geographic DDRs
-avg <- colMeans(df.all.geo.bray.1)
-sem <- sapply(df.all.geo.bray.1, function(x)sd(x)/sqrt(length(x)))
-plot(xs, colMeans(df.all.geo.bray.1), ylab="DDR slope", xlab=xlabel,
-  col = 'blue', cex=1, cex.lab=1.2, cex.axis = 1, pch=16,  ylim=c(-0.35, -0.1))
-text(2.2, -0.125, labels = 'total', cex = 1, col = 'blue')
+avg <- colMeans(df.all.geo.bray)
+sem <- sapply(df.all.geo.bray, function(x)sd(x)/sqrt(length(x)))
+plot(xs, colMeans(df.all.geo.bray), ylab="DDR slope", xlab=xlabel,
+  col = 'blue', cex=1, cex.lab=1.2, cex.axis = 1, pch=16,
+  ylim=c(-0.11, -0.06))
 arrows(xs, avg - sem, xs, avg + sem, length = 0.05, angle=90, code=3, col='blue')
 
-avg <- colMeans(df.act.geo.bray.1)
-sem <- sapply(df.act.geo.bray.1, function(x)sd(x)/sqrt(length(x)))
-points(xs, colMeans(df.act.geo.bray.1), ylab="DDR slope", xlab=xlabel,
+avg <- colMeans(df.act.geo.bray)
+sem <- sapply(df.act.geo.bray, function(x)sd(x)/sqrt(length(x)))
+points(xs, colMeans(df.act.geo.bray), ylab="DDR slope", xlab=xlabel,
   col = 'red', cex=1, cex.lab=1.2, cex.axis = 1, pch=16)
-text(2.2, -0.22, labels = 'active', cex = 1, col = 'red')
+#legend(2.8, -0.105, legend=c("total", "active"),
+#       col=c("blue", "red"), pch=16, cex=1,
+#       box.lty=0)
 arrows(xs, avg - sem, xs, avg + sem, length = 0.05, angle=90, code=3, col='red')
-title(paste("Geographic"), line = 1, cex=2)
+title(paste("Geographic, Bray"), line = 1, cex=2)
+
+# Make Plot for Geographic DDRs
+avg <- colMeans(df.all.geo.sor)
+sem <- sapply(df.all.geo.sor, function(x)sd(x)/sqrt(length(x)))
+plot(xs, avg, ylab="DDR slope", xlab=xlabel,
+  col = 'blue', cex=1, cex.lab=1.2, cex.axis = 1, pch=16,
+  ylim=c(-0.036, 0))
+arrows(xs, avg - sem, xs, avg + sem, length = 0.05, angle=90, code=3, col='blue')
+
+avg <- colMeans(df.act.geo.sor)
+sem <- sapply(df.act.geo.sor, function(x)sd(x)/sqrt(length(x)))
+points(xs, colMeans(df.act.geo.sor), ylab="DDR slope", xlab=xlabel,
+  col = 'red', cex=1, cex.lab=1.2, cex.axis = 1, pch=16)
+arrows(xs, avg - sem, xs, avg + sem, length = 0.05, angle=90, code=3, col='red')
+legend(1.1, -0.025, legend=c("total", "active"),
+       col=c("blue", "red"), pch=16, cex=1,
+       box.lty=0)
+title(paste("Geographic, Sorensen"), line = 1, cex=2)
+dev.off()
+```
 
 
-xs <- c(13, 18, 23, 28, 33, 38, 43, 48)
-xlabel <- "Number of sites"
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
+file <- paste("~/GitHub/DistDecay/figs/Fig2-DDR-v1x2.png", sep="")
+png(filename=file, width=5, height=2.5, units="in", res=600, pointsize=10)
+
+par(mfrow=c(1, 2), mar = c(5,5,3,1), oma =c(0,0,0,0))
+
+xs <- log10(ns-1)
+xlabel <- "log10(sampling depth)"
 
 # Make Plot for Environmental DDRs
-avg <- colMeans(df.all.env.bray.2)
-sem <- sapply(df.all.env.bray.2, function(x)sd(x)/sqrt(length(x)))
-plot(xs, colMeans(df.all.env.bray.2), ylab="DDR slope", xlab=xlabel,
-  col = 'blue', cex=1, cex.lab=1.2, cex.axis = 1, pch=16, ylim=c(-0.35, -0.1))
-#text(2.2, -0.38, labels = 'total', cex = 1, col = 'blue')
+avg <- colMeans(df.all.env.bray)
+sem <- sapply(df.all.env.bray, function(x)sd(x)/sqrt(length(x)))
+plot(xs, colMeans(df.all.env.bray), ylab="DDR slope", xlab=xlabel,
+  col = 'blue', cex=1, cex.lab=1.2, cex.axis = 1, pch=16, ylim=c(-0.65, -0.35))
 arrows(xs, avg - sem, xs, avg + sem, length = 0.05, angle=90, code=3, col='blue')
 
-avg <- colMeans(df.act.env.bray.2)
-sem <- sapply(df.act.env.bray.2, function(x)sd(x)/sqrt(length(x)))
-points(xs, colMeans(df.act.env.bray.2), ylab="DDR slope", xlab=xlabel,
+avg <- colMeans(df.act.env.bray)
+sem <- sapply(df.act.env.bray, function(x)sd(x)/sqrt(length(x)))
+points(xs, colMeans(df.act.env.bray), ylab="DDR slope", xlab=xlabel,
   col = 'red', cex=1, cex.lab=1.2, cex.axis = 1, pch=16)
-#text(2.2, -0.6, labels = 'active', cex = 1, col = 'red')
 arrows(xs, avg - sem, xs, avg + sem, length = 0.05, angle=90, code=3, col='red')
-title(paste("Environmental"), line = 1, cex=2)
+#legend(2.0, -0.004, legend=c("total", "active"),
+#       col=c("blue", "red"), pch=16, cex=1,
+#       box.lty=0)
+title(paste("Environmental, Bray"), line = 1, cex=2)
 
 
 # Make Plot for Geographic DDRs
-avg <- colMeans(df.all.geo.bray.2)
-sem <- sapply(df.all.geo.bray.2, function(x)sd(x)/sqrt(length(x)))
-plot(xs, colMeans(df.all.geo.bray.2), ylab="DDR slope", xlab=xlabel,
-  col = 'blue', cex=1, cex.lab=1.2, cex.axis = 1, pch=16,  ylim=c(-0.22, -0.1))
-#text(2.2, -0.085, labels = 'total', cex = 1, col = 'blue')
+avg <- colMeans(df.all.geo.bray)
+sem <- sapply(df.all.geo.bray, function(x)sd(x)/sqrt(length(x)))
+plot(xs, colMeans(df.all.geo.bray), ylab="DDR slope", xlab=xlabel,
+  col = 'blue', cex=1, cex.lab=1.2, cex.axis = 1, pch=16,  ylim=c(-0.11, -0.06))
 arrows(xs, avg - sem, xs, avg + sem, length = 0.05, angle=90, code=3, col='blue')
 
-avg <- colMeans(df.act.geo.bray.2)
-sem <- sapply(df.act.geo.bray.2, function(x)sd(x)/sqrt(length(x)))
-points(xs, colMeans(df.act.geo.bray.2), ylab="DDR slope", xlab=xlabel,
+avg <- colMeans(df.act.geo.bray)
+sem <- sapply(df.act.geo.bray, function(x)sd(x)/sqrt(length(x)))
+points(xs, colMeans(df.act.geo.bray), ylab="DDR slope", xlab=xlabel,
   col = 'red', cex=1, cex.lab=1.2, cex.axis = 1, pch=16)
-#text(2.2, -0.115, labels = 'active', cex = 1, col = 'red')
+#legend(2.8, -0.105, legend=c("total", "active"),
+#       col=c("blue", "red"), pch=16, cex=1,
+#       box.lty=0)
 arrows(xs, avg - sem, xs, avg + sem, length = 0.05, angle=90, code=3, col='red')
-title(paste("Geographic"), line = 1, cex=2)
+title(paste("Geographic, Bray"), line = 1, cex=2)
 
 dev.off()
 ```

@@ -49,24 +49,10 @@ env$rna.dna  <- log(flo$meanRNA/flo$meanDNA)
 ```
 
 
-```{r, echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=8}
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=8}
 
 plot.new()
 par(mfrow=c(3, 2), mar = c(5,5,3,1), oma =c(0,0,0,0))
-
-corr <- cor.test(env$TP, env$rna, method="pearson")
-p <- round(corr$p.value,3)
-c <- round(corr$estimate,2)
-plot(env$TP, env$rna, ylab="RNA", xlab="TP", cex.lab=1.25,
-     cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
-abline(lm(env$rna ~ env$TP))
-
-corr <- cor.test(env$TP, env$dna, method="pearson")
-p <- round(corr$p.value,3)
-c <- round(corr$estimate,2)
-plot(env$TP, env$dna, ylab="DNA", xlab="TP", cex.lab=1.25,
-     cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
-abline(lm(env$dna ~ env$TP))
 
 corr <- cor.test(env$TP, env$rna.dna, method="pearson")
 p <- round(corr$p.value,3)
@@ -75,7 +61,6 @@ plot(env$TP, env$rna.dna, ylab="RNA:DNA", xlab="TP", cex.lab=1.25,
      cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
 abline(lm(env$rna.dna ~ env$TP))
 
-
 corr <- cor.test(env$TP, env$N.liv, method="pearson")
 p <- round(corr$p.value,3)
 c <- round(corr$estimate,2)
@@ -83,17 +68,31 @@ plot(env$TP, env$N.liv, ylab="Live density", xlab="TP", cex.lab=1.25,
      cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
 abline(lm(env$N.liv ~ env$TP))
 
-corr <- cor.test(env$TP, env$N.tot, method="pearson")
+corr <- cor.test(env$DO, env$rna.dna, method="pearson")
 p <- round(corr$p.value,3)
 c <- round(corr$estimate,2)
-plot(env$TP, env$N.tot, ylab="Total N", xlab="TP", cex.lab=1.25,
+plot(env$DO, env$rna.dna, ylab="RNA:DNA", xlab="DO", cex.lab=1.25,
      cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
-abline(lm(env$N.tot ~ env$TP))
+abline(lm(env$rna.dna ~ env$DO))
 
-corr <- cor.test(env$TP, env$N.ded, method="pearson")
+corr <- cor.test(env$DO, env$N.liv, method="pearson")
 p <- round(corr$p.value,3)
 c <- round(corr$estimate,2)
-plot(env$TP, env$N.ded, ylab="Dead density", xlab="TP", cex.lab=1.25,
+plot(env$DO, env$N.liv, ylab="Live density", xlab="DO", cex.lab=1.25,
      cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
-abline(lm(env$N.ded ~ env$TP))
+abline(lm(env$N.liv ~ env$DO))
+
+corr <- cor.test(env$DOC, env$rna.dna, method="pearson")
+p <- round(corr$p.value,3)
+c <- round(corr$estimate,2)
+plot(env$DOC, env$rna.dna, ylab="RNA:DNA", xlab="DOC", cex.lab=1.25,
+     cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
+abline(lm(env$rna.dna ~ env$DOC))
+
+corr <- cor.test(env$DOC, env$N.liv, method="pearson")
+p <- round(corr$p.value,3)
+c <- round(corr$estimate,2)
+plot(env$DOC, env$N.liv, ylab="Live density", xlab="DOC", cex.lab=1.25,
+     cex=1, cex.axis = 1, main=paste("r =", c, ", p =", p))
+abline(lm(env$N.liv ~ env$DOC))
 ```

@@ -10,19 +10,19 @@ header-includes: \usepackage{array}
 # Retrieve and set the working directory
 rm(list=ls())
 getwd()
-setwd("~/GitHub/DistDecay/empirical_analyses")
+setwd("~/GitHub/DormancyDecay/empirical_analyses")
 
 # Load packages
 require("simba")
 require("fossil")
 require("data.table")
-load(file = "~/GitHub/DistDecay/data/MicrobialCommunity/INPond_Initial.RData")
+load(file = "~/GitHub/DormancyDecay/data/MicrobialCommunity/INPond_Initial.RData")
 
 # Load Environmental and Geographical Data
-env <- read.table("~/GitHub/DistDecay/data/Environmental/20130801_INPondDataMod.csv", sep = ",", header = TRUE)
+env <- read.table("~/GitHub/DormancyDecay/data/Environmental/20130801_INPondDataMod.csv", sep = ",", header = TRUE)
 env <- env[complete.cases(env),]
 env[which(env$Sample_ID == "HNF133"), ]["SpC"] <- 55
-env$chla <- log(env$chla)
+env[which(env$Sample_ID == "YSF46"), ]["lat"] <- 39.1186
 ```
 
 
@@ -203,7 +203,7 @@ clr <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan",
 
 plot.new()
 
-file <- paste("~/GitHub/DistDecay/figs/FromSites/DD_Paired1.png", sep="")
+file <- paste("~/GitHub/DormancyDecay/figs/FromSites/DD_Paired1.png", sep="")
 png(filename=file, width=5, height=5, units="in", res=600, pointsize=10)
 par(mfrow=c(3, 3), mgp=c(3.1,1,0), mar = c(4,6,2,1), oma =c(3,3,0,0))
 
@@ -263,7 +263,7 @@ dev.off()
 
 ```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE, fig.width=6, fig.height=6}
 plot.new()
-file <- paste("~/GitHub/DistDecay/figs/FromSites/DD_Paired2.png", sep="")
+file <- paste("~/GitHub/DormancyDecay/figs/FromSites/DD_Paired2.png", sep="")
 png(filename=file, width=5, height=2.5, units="in", res=600, pointsize=10)
 par(mfrow=c(1, 2), mar = c(4,6,2,1), oma =c(0,0,0,0))
 

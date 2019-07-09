@@ -9,27 +9,30 @@ header-includes: \usepackage{array}
 # Retrieve and set the working directory
 rm(list=ls())
 getwd()
-setwd("~/GitHub/IN-ponds")
+setwd("~/GitHub/DormancyDecay")
 
 # Load packages
 require("corrplot")
 require("cowplot")
-load(file = "~/GitHub/IN-ponds/data/MicrobialCommunity/INPond_Initial.RData")
+#load(file = "~/GitHub/IN-ponds/data/MicrobialCommunity/INPond_Initial.RData")
 ```
 
 
 ```{r, results = 'hide', echo=TRUE, message = FALSE, warning = FALSE}
-env <- read.table("~/GitHub/IN-ponds/data/Environmental/20130801_PondDataMod.csv",
+env <- read.table("~/GitHub/DormancyDecay/data/Environmental/20130801_INPondDataMod.csv",
                   sep = ",", header = TRUE)
-env <- env[complete.cases(env), ]
 
-env$DO <- log(env$DO)
-env$canopy <- log(env$canopy)
-env$Color <- log(env$Color)
-env$chla <- log(env$chla)
-env$SpC <- log(env$SpC)
-env$DON <- log(env$DON)
-env$DOC <- log(env$DOC)
+env <- env[complete.cases(env), ]
+env[which(env$Sample_ID == "HNF133"), ]["SpC"] <- 55
+env[which(env$Sample_ID == "YSF46"), ]["lat"] <- 39.1186
+
+#env$DO <- log(env$DO)
+#env$canopy <- log(env$canopy)
+#env$Color <- log(env$Color)
+#env$chla <- log(env$chla)
+#env$SpC <- log(env$SpC)
+#env$DON <- log(env$DON)
+#env$DOC <- log(env$DOC)
 
 env <- env[env$SpC > 2 , ]
 ```
