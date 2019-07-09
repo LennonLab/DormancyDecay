@@ -25,7 +25,8 @@ env <- read.table("~/GitHub/DormancyDecay/data/Environmental/20130801_INPondData
 env <- env[complete.cases(env),]
 env[which(env$Sample_ID == "HNF133"), ]["SpC"] <- 55
 env[which(env$Sample_ID == "YSF46"), ]["lat"] <- 39.1186
-env.dat <- as.matrix(subset(env, select = Diameter:TP))
+#env.dat <- as.matrix(subset(env, select = Elevation:TP))
+env.dat <- as.matrix(subset(env, select = c("canopy", "DO", "ORP", "pH", "Temp", "DOC", "TDS", "Color", "chla", "TP", "Depth", "Salinity", "SpC", "DON", "Diameter")))
 ```
 
 
@@ -35,7 +36,7 @@ locs <- env[, "Location"]
 env.dat <- scale(env.dat, center = TRUE, scale = TRUE)
 
 # Conduct PCA
-pca <- prcomp(env.dat, center=TRUE, scale. = TRUE)
+pca <- princomp(env.dat)
 print(pca)
 
 plot(pca, type = "lines")
