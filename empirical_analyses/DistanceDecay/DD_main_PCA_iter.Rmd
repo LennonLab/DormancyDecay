@@ -114,7 +114,7 @@ m_and_b <- function(com, dist, metric, bin1) {
   
   m <- 0
   b <- 0
-  n <- 10
+  n <- 40
   for (i in 1:n){
     
     com <- randomizeMatrix(com, null.model = "richness", iterations = 1000)
@@ -172,7 +172,7 @@ slope1 <- round(coefficients(DD.act.env)[2], 3)
 int1 <- round(coefficients(DD.act.env)[1], 3)
 p <- round(summary(DD.act.env)$coefficients[8],3)
 colors <- densCols(env.dist, act.bray.dist, colramp=clr)
-plot(env.dist, act.bray.dist, ylab="Similarity", pch=20,
+plot(env.dist, act.bray.dist, ylab="Bray-Curtis similarity", pch=20,
   xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(act.bray.dist, max))))
 title(paste("Active: slope = ", slope1), line = 1, cex=1)
@@ -189,10 +189,10 @@ slope2 <- round(coefficients(DD.all.env)[2], 3)
 int2 <- round(coefficients(DD.all.env)[1], 3)
 p <- round(summary(DD.all.env)$coefficients[8], 3)
 colors <- densCols(env.dist, all.bray.dist, colramp=clr)
-plot(env.dist, all.bray.dist, ylab="Similarity", pch=20,
+plot(env.dist, all.bray.dist, ylab="Bray-Curtis similarity", pch=20,
   xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(all.bray.dist, max))))
-title(paste("All: slope = ", slope2), line = 1, cex=2)
+title(paste("Total: slope = ", slope2), line = 1, cex=2)
 abline(DD.all.env, col = "black", lwd=3)
 res <- m_and_b(all.com, env.dist, "bray", FALSE)
 slope <- res[1]
@@ -205,7 +205,7 @@ slope3 <- round(coefficients(DD.act.geo)[2], 3)
 int3 <- round(coefficients(DD.act.geo)[1], 3)
 p <- round(summary(DD.act.geo)$coefficients[8],3)
 colors <- densCols(geo.dist, act.bray.dist, colramp=clr)
-plot(geo.dist, act.bray.dist, ylab="Similarity", pch=20,
+plot(geo.dist, act.bray.dist, ylab="Bray-Curtis similarity", pch=20,
   xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(act.bray.dist, max))))
 title(paste("Active: slope = ", slope3), line = 1, cex=1)
@@ -221,10 +221,10 @@ slope4 <- round(coefficients(DD.all.geo)[2], 3)
 int4 <- round(coefficients(DD.all.geo)[1], 3)
 p <- round(summary(DD.all.geo)$coefficients[8], 3)
 colors <- densCols(geo.dist, all.bray.dist, colramp=clr)
-plot(geo.dist, all.bray.dist, ylab="Similarity", pch=20,
+plot(geo.dist, all.bray.dist, ylab="Bray-Curtis similarity", pch=20,
   xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(all.bray.dist, max))))
-title(paste("All: slope = ", slope4), line = 1, cex=1)
+title(paste("Total: slope = ", slope4), line = 1, cex=1)
 abline(DD.all.geo, col = "black", lwd=3)
 res <- m_and_b(all.com, geo.dist, "bray", FALSE)
 slope <- res[1]
@@ -291,7 +291,7 @@ slope1 <- round(coefficients(DD.act.env)[2], 3)
 int1 <- round(coefficients(DD.act.env)[1], 3)
 p <- round(summary(DD.act.env)$coefficients[8],3)
 colors <- densCols(env.dist, act.sore.dist, colramp=clr)
-plot(env.dist, act.sore.dist, ylab="Similarity", pch=20,
+plot(env.dist, act.sore.dist, ylab="Sørensen similarity", pch=20,
   xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(act.sore.dist, max))))
 title(paste("Active: slope = ", slope1), line = 1, cex=1)
@@ -307,10 +307,10 @@ slope2 <- round(coefficients(DD.all.env)[2], 3)
 int2 <- round(coefficients(DD.all.env)[1], 3)
 p <- round(summary(DD.all.env)$coefficients[8], 3)
 colors <- densCols(env.dist, all.sore.dist, colramp=clr)
-plot(env.dist, all.sore.dist, ylab="Similarity", pch=20,
+plot(env.dist, all.sore.dist, ylab="Sørensen similarity", pch=20,
   xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(all.sore.dist, max))))
-title(paste("All: slope = ", slope2), line = 1, cex=2)
+title(paste("Total: slope = ", slope2), line = 1, cex=2)
 abline(DD.all.env, col = "black", lwd=3)
 res <- m_and_b(all.com, env.dist, "bray", TRUE)
 slope <- res[1]
@@ -323,7 +323,7 @@ slope3 <- round(coefficients(DD.act.geo)[2], 3)
 int3 <- round(coefficients(DD.act.geo)[1], 3)
 p <- round(summary(DD.act.geo)$coefficients[8],3)
 colors <- densCols(geo.dist, act.sore.dist, colramp=clr)
-plot(geo.dist, act.sore.dist, ylab="Similarity", pch=20,
+plot(geo.dist, act.sore.dist, ylab="Sørensen similarity", pch=20,
   xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(act.sore.dist, max))))
 title(paste("Active: slope = ", slope3), line = 1, cex=1)
@@ -339,10 +339,10 @@ slope4 <- round(coefficients(DD.all.geo)[2], 3)
 int4 <- round(coefficients(DD.all.geo)[1], 3)
 p <- round(summary(DD.all.geo)$coefficients[8], 3)
 colors <- densCols(geo.dist, all.sore.dist, colramp=clr)
-plot(geo.dist, all.sore.dist, ylab="Similarity", pch=20,
+plot(geo.dist, all.sore.dist, ylab="Sørensen similarity", pch=20,
   xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(all.sore.dist, max))))
-title(paste("All: slope = ", slope4), line = 1, cex=1)
+title(paste("Total: slope = ", slope4), line = 1, cex=1)
 abline(DD.all.geo, col = "black", lwd=3)
 res <- m_and_b(all.com, geo.dist, "bray", TRUE)
 slope <- res[1]
@@ -406,7 +406,7 @@ slope1 <- round(coefficients(DD.act.env)[2], 3)
 int1 <- round(coefficients(DD.act.env)[1], 3)
 p <- round(summary(DD.act.env)$coefficients[8],3)
 colors <- densCols(env.dist, act.canb.dist, colramp=clr)
-plot(env.dist, act.canb.dist, ylab="Similarity", pch=20,
+plot(env.dist, act.canb.dist, ylab="Canberra similarity", pch=20,
   xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(act.canb.dist, max))))
 title(paste("Active: slope = ", slope1), line = 1, cex=1)
@@ -422,10 +422,10 @@ slope2 <- round(coefficients(DD.all.env)[2], 3)
 int2 <- round(coefficients(DD.all.env)[1], 3)
 p <- round(summary(DD.all.env)$coefficients[8], 3)
 colors <- densCols(env.dist, all.canb.dist, colramp=clr)
-plot(env.dist, all.canb.dist, ylab="Similarity", pch=20,
+plot(env.dist, all.canb.dist, ylab="Canberra similarity", pch=20,
   xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(all.canb.dist, max))))
-title(paste("All: slope = ", slope2), line = 1, cex=2)
+title(paste("Total: slope = ", slope2), line = 1, cex=2)
 abline(DD.all.env, col = "black", lwd=3)
 res <- m_and_b(all.com, env.dist, "canberra", FALSE)
 slope <- res[1]
@@ -438,7 +438,7 @@ slope3 <- round(coefficients(DD.act.geo)[2], 3)
 int3 <- round(coefficients(DD.act.geo)[1], 3)
 p <- round(summary(DD.act.geo)$coefficients[8],3)
 colors <- densCols(geo.dist, act.canb.dist, colramp=clr)
-plot(geo.dist, act.canb.dist, ylab="Similarity", pch=20,
+plot(geo.dist, act.canb.dist, ylab="Canberra similarity", pch=20,
   xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(act.canb.dist, max))))
 title(paste("Active: slope = ", slope3), line = 1, cex=1)
@@ -454,10 +454,10 @@ slope4 <- round(coefficients(DD.all.geo)[2], 3)
 int4 <- round(coefficients(DD.all.geo)[1], 3)
 p <- round(summary(DD.all.geo)$coefficients[8], 3)
 colors <- densCols(geo.dist, all.canb.dist, colramp=clr)
-plot(geo.dist, all.canb.dist, ylab="Similarity", pch=20,
+plot(geo.dist, all.canb.dist, ylab="Canberra similarity", pch=20,
   xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(all.canb.dist, max))))
-title(paste("All: slope = ", slope4), line = 1, cex=1)
+title(paste("Total: slope = ", slope4), line = 1, cex=1)
 abline(DD.all.geo, col = "black", lwd=3)
 res <- m_and_b(all.com, geo.dist, "canberra", FALSE)
 slope <- res[1]
@@ -526,7 +526,7 @@ slope1 <- round(coefficients(DD.act.env)[2], 3)
 int1 <- round(coefficients(DD.act.env)[1], 3)
 p <- round(summary(DD.act.env)$coefficients[8],3)
 colors <- densCols(env.dist, act.bray.dist, colramp=clr)
-plot(env.dist, act.bray.dist, ylab="Similarity", pch=20,
+plot(env.dist, act.bray.dist, ylab="Bray-Curtis similarity", pch=20,
   xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(act.bray.dist, max))))
 title(paste("Active: slope = ", slope1), line = 1, cex=1)
@@ -542,10 +542,10 @@ slope2 <- round(coefficients(DD.all.env)[2], 3)
 int2 <- round(coefficients(DD.all.env)[1], 3)
 p <- round(summary(DD.all.env)$coefficients[8], 3)
 colors <- densCols(env.dist, all.bray.dist, colramp=clr)
-plot(env.dist, all.bray.dist, ylab="Similarity", pch=20,
+plot(env.dist, all.bray.dist, ylab="Bray-Curtis similarity", pch=20,
   xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(all.bray.dist, max))))
-title(paste("All: slope = ", slope2), line = 1, cex=2)
+title(paste("Total: slope = ", slope2), line = 1, cex=2)
 abline(DD.all.env, col = "black", lwd=3)
 res <- m_and_b(all.com, env.dist, "bray", FALSE)
 slope <- res[1]
@@ -558,7 +558,7 @@ slope3 <- round(coefficients(DD.act.geo)[2], 3)
 int3 <- round(coefficients(DD.act.geo)[1], 3)
 p <- round(summary(DD.act.geo)$coefficients[8],3)
 colors <- densCols(geo.dist, act.bray.dist, colramp=clr)
-plot(geo.dist, act.bray.dist, ylab="Similarity", pch=20,
+plot(geo.dist, act.bray.dist, ylab="Bray-Curtis similarity", pch=20,
   xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(act.bray.dist, max))))
 title(paste("Active: slope = ", slope3), line = 1, cex=1)
@@ -574,10 +574,10 @@ slope4 <- round(coefficients(DD.all.geo)[2], 3)
 int4 <- round(coefficients(DD.all.geo)[1], 3)
 p <- round(summary(DD.all.geo)$coefficients[8], 3)
 colors <- densCols(geo.dist, all.bray.dist, colramp=clr)
-plot(geo.dist, all.bray.dist, ylab="Similarity", pch=20,
+plot(geo.dist, all.bray.dist, ylab="Bray-Curtis similarity", pch=20,
   xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(all.bray.dist, max))))
-title(paste("All: slope = ", slope4), line = 1, cex=1)
+title(paste("Total: slope = ", slope4), line = 1, cex=1)
 abline(DD.all.geo, col = "black", lwd=3)
 res <- m_and_b(all.com, geo.dist, "bray", FALSE)
 slope <- res[1]
@@ -641,7 +641,7 @@ slope1 <- round(coefficients(DD.act.env)[2], 3)
 int1 <- round(coefficients(DD.act.env)[1], 3)
 p <- round(summary(DD.act.env)$coefficients[8],3)
 colors <- densCols(env.dist, act.sore.dist, colramp=clr)
-plot(env.dist, act.sore.dist, ylab="Similarity", pch=20,
+plot(env.dist, act.sore.dist, ylab="Sørensen similarity", pch=20,
   xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(act.sore.dist, max))))
 title(paste("Active: slope = ", slope1), line = 1, cex=1)
@@ -657,10 +657,10 @@ slope2 <- round(coefficients(DD.all.env)[2], 3)
 int2 <- round(coefficients(DD.all.env)[1], 3)
 p <- round(summary(DD.all.env)$coefficients[8], 3)
 colors <- densCols(env.dist, all.sore.dist, colramp=clr)
-plot(env.dist, all.sore.dist, ylab="Similarity", pch=20,
+plot(env.dist, all.sore.dist, ylab="Sørensen similarity", pch=20,
   xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(all.sore.dist, max))))
-title(paste("All: slope = ", slope2), line = 1, cex=2)
+title(paste("Total: slope = ", slope2), line = 1, cex=2)
 abline(DD.all.env, col = "black", lwd=3)
 res <- m_and_b(all.com, env.dist, "bray", TRUE)
 slope <- res[1]
@@ -673,7 +673,7 @@ slope3 <- round(coefficients(DD.act.geo)[2], 3)
 int3 <- round(coefficients(DD.act.geo)[1], 3)
 p <- round(summary(DD.act.geo)$coefficients[8],3)
 colors <- densCols(geo.dist, act.sore.dist, colramp=clr)
-plot(geo.dist, act.sore.dist, ylab="Similarity", pch=20,
+plot(geo.dist, act.sore.dist, ylab="Sørensen similarity", pch=20,
   xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(act.sore.dist, max))))
 title(paste("Active: slope = ", slope3), line = 1, cex=1)
@@ -689,10 +689,10 @@ slope4 <- round(coefficients(DD.all.geo)[2], 3)
 int4 <- round(coefficients(DD.all.geo)[1], 3)
 p <- round(summary(DD.all.geo)$coefficients[8], 3)
 colors <- densCols(geo.dist, all.sore.dist, colramp=clr)
-plot(geo.dist, all.sore.dist, ylab="Similarity", pch=20,
+plot(geo.dist, all.sore.dist, ylab="Sørensen similarity", pch=20,
   xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(all.sore.dist, max))))
-title(paste("All: slope = ", slope4), line = 1, cex=1)
+title(paste("Total: slope = ", slope4), line = 1, cex=1)
 abline(DD.all.geo, col = "black", lwd=3)
 res <- m_and_b(all.com, geo.dist, "bray", TRUE)
 slope <- res[1]
@@ -755,7 +755,7 @@ slope1 <- round(coefficients(DD.act.env)[2], 3)
 int1 <- round(coefficients(DD.act.env)[1], 3)
 p <- round(summary(DD.act.env)$coefficients[8],3)
 colors <- densCols(env.dist, act.canb.dist, colramp=clr)
-plot(env.dist, act.canb.dist, ylab="Similarity", pch=20,
+plot(env.dist, act.canb.dist, ylab="Canberra similarity", pch=20,
   xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(act.canb.dist, max))))
 title(paste("Active: slope = ", slope1), line = 1, cex=1)
@@ -771,10 +771,10 @@ slope2 <- round(coefficients(DD.all.env)[2], 3)
 int2 <- round(coefficients(DD.all.env)[1], 3)
 p <- round(summary(DD.all.env)$coefficients[8], 3)
 colors <- densCols(env.dist, all.canb.dist, colramp=clr)
-plot(env.dist, all.canb.dist, ylab="Similarity", pch=20,
+plot(env.dist, all.canb.dist, ylab="Canberra similarity", pch=20,
   xlab="Environmental distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(all.canb.dist, max))))
-title(paste("All: slope = ", slope2), line = 1, cex=2)
+title(paste("Total: slope = ", slope2), line = 1, cex=2)
 abline(DD.all.env, col = "black", lwd=3)
 res <- m_and_b(all.com, env.dist, "canberra", FALSE)
 slope <- res[1]
@@ -787,7 +787,7 @@ slope3 <- round(coefficients(DD.act.geo)[2], 3)
 int3 <- round(coefficients(DD.act.geo)[1], 3)
 p <- round(summary(DD.act.geo)$coefficients[8],3)
 colors <- densCols(geo.dist, act.canb.dist, colramp=clr)
-plot(geo.dist, act.canb.dist, ylab="Similarity", pch=20,
+plot(geo.dist, act.canb.dist, ylab="Canberra similarity", pch=20,
   xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(act.canb.dist, max))))
 title(paste("Active: slope = ", slope3), line = 1, cex=1)
@@ -803,10 +803,10 @@ slope4 <- round(coefficients(DD.all.geo)[2], 3)
 int4 <- round(coefficients(DD.all.geo)[1], 3)
 p <- round(summary(DD.all.geo)$coefficients[8], 3)
 colors <- densCols(geo.dist, all.canb.dist, colramp=clr)
-plot(geo.dist, all.canb.dist, ylab="Similarity", pch=20,
+plot(geo.dist, all.canb.dist, ylab="Canberra similarity", pch=20,
   xlab="Geographic distance", col = colors, cex=1, cex.lab=1.2,
   ylim=c(0, max(sapply(all.canb.dist, max))))
-title(paste("All: slope = ", slope4), line = 1, cex=1)
+title(paste("Total: slope = ", slope4), line = 1, cex=1)
 abline(DD.all.geo, col = "black", lwd=3)
 res <- m_and_b(all.com, geo.dist, "canberra", FALSE)
 slope <- res[1]
