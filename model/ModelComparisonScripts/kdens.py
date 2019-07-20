@@ -32,30 +32,39 @@ def figplot(x, xpt, xlab, ylab, fig, n):
         plt.xlabel(xlab, fontsize=fs)
         plt.ylabel(ylab, fontsize=fs)
         plt.tick_params(axis='both', labelsize=fs)
-        plt.axvline(xpt, color='k', ls=':', lw=1)
+        #plt.axvline(xpt, color='k', ls=':', lw=1)
 
         return fig
 
 
 def figfunction():
 
-    p, fr, _lw, w, fs, sz = 2, 0.25, 0.5, 1, 6, 4
-    ws, hs = 0.45, 0.5
+    #p, fr, _lw, w, fs, sz = 2, 0.25, 0.5, 1, 6, 4
+    #ws, hs = 0.45, 0.5
 
-    mydir = expanduser("~/GitHub/DistDecay")
+    mydir = expanduser("~/GitHub/DormancyDecay")
 
     mets = ['Bray', 'Dice', 'Canb']
-    fits = [0, 1]
+    fits = [1]
     for fit in fits:
         for met in mets:
+            print fit, met
 
-            if met == 'Bray': xpt = [-0.325, -0.248, -0.182, -0.132]
-            elif met == 'Dice': xpt = [-0.101, -0.054, -0.052, -0.032]
-            elif met == 'Canb': xpt = [-0.054, -0.029, -0.028, -0.016]
+            #if met == 'Bray': xpt = [-0.325, -0.248, -0.182, -0.132]
+            #elif met == 'Dice': xpt = [-0.101, -0.054, -0.052, -0.032]
+            #elif met == 'Canb': xpt = [-0.054, -0.029, -0.028, -0.016]
 
-            df = pd.read_csv(mydir+'/model/ModelData/modelresults.txt')
+            df = pd.read_csv(mydir+'/model/ModelData/saved/modelresults_nodispersal.txt')
             if fit == 1: df = df[df['fit'] == fit]
 
+            print np.mean(df[met+'-ActEnv-m'])#, np.mean(df[met+'-ActEnv-b'])
+            print np.mean(df[met+'-AllEnv-m'])#, np.mean(df[met+'-AllEnv-b'])
+            print np.mean(df[met+'-ActGeo-m'])#, np.mean(df[met+'-ActGeo-b'])
+            print np.mean(df[met+'-AllGeo-m'])#, np.mean(df[met+'-AllGeo-b'])
+            
+            print '\n\n'
+            
+            '''
             fig = plt.figure()
             ylab = 'kernel density'
 
@@ -74,9 +83,10 @@ def figfunction():
 
             #### Final Format and Save #####################################################
             plt.subplots_adjust(wspace=ws, hspace=hs)
-            if fit == 0: plt.savefig(mydir+'/figs/FromSims/temp/'+met+'-kdens.png', dpi=200, bbox_inches = "tight")
-            elif fit == 1: plt.savefig(mydir+'/figs/FromSims/temp/'+met+'-kdens-fit.png', dpi=200, bbox_inches = "tight")
+            if fit == 0: plt.savefig(mydir+'/figs/FromSims/'+met+'-kdens.png', dpi=200, bbox_inches = "tight")
+            elif fit == 1: plt.savefig(mydir+'/figs/FromSims/'+met+'-kdens-fit.png', dpi=200, bbox_inches = "tight")
             plt.close()
+            '''
 
 
 

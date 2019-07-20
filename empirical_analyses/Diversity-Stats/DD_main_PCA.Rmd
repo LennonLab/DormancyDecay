@@ -1,0 +1,89 @@
+---
+title: "Distance Decay Relationship among microbial communities of IN Ponds"
+geometry: margin=2.54cm
+date: "November 7, 2015"
+output: pdf_document
+header-includes: \usepackage{array}
+---
+
+```{r}
+# Retrieve and set the working directory
+rm(list=ls())
+getwd()
+setwd("~/GitHub/DormancyDecay/empirical_analyses/DistanceDecay")
+# Load packages
+#install.packages('simba', dependencies = TRUE)
+require("simba")
+#install.packages("fossil")
+require("fossil")
+```
+
+
+```{r}
+# Load community data
+load(file = "~/GitHub/DormancyDecay/data/MicrobialCommunity/INPond_Initial.RData")
+# Load Environmental and Geographical Data
+env <- read.table("~/GitHub/DormancyDecay/data/Environmental/20130801_INPondDataMod.csv", sep = ",", header = TRUE)
+env <- env[complete.cases(env),]
+env[which(env$Sample_ID == "HNF133"), ]["SpC"] <- 55
+env[which(env$Sample_ID == "YSF46"), ]["lat"] <- 39.1186
+```
+
+
+```{r, results = 'hide', echo=FALSE, message = FALSE, warning = FALSE}
+# Select DNA Data: Use the `grep()` Command and Rename with `gsub()`
+# The active portion, based on cDNA
+act.com <- Pond97[grep("*-cDNA", rownames(Pond97)), ]
+rownames(act.com) <- gsub("\\-cDNA", "", rownames(act.com))
+
+# The community without respect to active or not, 16S rRNA gene sequences
+all.com <- Pond97[grep("*-DNA", rownames(Pond97)), ]
+rownames(all.com) <- gsub("\\-DNA", "", rownames(all.com))
+
+# Remove Sites Not in the Environmental Data Set
+act.com <- act.com[rownames(act.com)  %in% env$Sample_ID, ]
+all.com <- all.com[rownames(all.com)  %in% env$Sample_ID, ]
+
+# Remove sites not shared between matrices
+all.com <- all.com[rownames(all.com)  %in% row.names(act.com),]
+env <- env[env$Sample_ID %in% row.names(act.com),]
+
+# Remove Zero-Occurrence Taxa
+act.com <- act.com[ , colSums(act.com) > 0]
+all.com <- all.com[ , colSums(all.com) > 0]
+
+# Use relative abundance
+#act.com <- sweep(act.com, 1, rowSums(act.com), '/')
+#all.com <- sweep(all.com, 1, rowSums(all.com), '/')
+```
+
+```{r}
+all.com.bin <- ifelse(all.com > 0, 1, 0)
+act.com.bin <- ifelse(act.com > 0, 1, 0)
+
+diffS <- rowSums(all.com.bin) - rowSums(act.com.bin)
+print(sum(diffS >= 0))
+print(sum(diffS < 0))
+
+
+diffS <- (all.com.bin != 0) - (act.com.bin != 0)
+dim(all.com.bin)
+dim(act.com.bin)
+diffS <- ifelse(diffS >= 0, 0, 1)
+mean(rowSums(diffS))
+
+max(act.com)
+max(all.com)
+
+mean(rowSums(act.com != 0))
+sd(rowSums(act.com != 0))
+
+mean(rowSums(all.com != 0))
+sd(rowSums(all.com != 0))
+
+max(rowSums(act.com.bin != 0))#/21568
+max(rowSums(all.com.bin != 0))#/27466
+
+mean(diffS)
+sd(diffS)
+```

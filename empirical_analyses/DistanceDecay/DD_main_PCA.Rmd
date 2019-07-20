@@ -53,8 +53,8 @@ act.com <- act.com[ , colSums(act.com) > 0]
 all.com <- all.com[ , colSums(all.com) > 0]
 
 # Use relative abundance
-act.com <- sweep(act.com, 1, rowSums(act.com), '/')
-all.com <- sweep(all.com, 1, rowSums(all.com), '/')
+#act.com <- sweep(act.com, 1, rowSums(act.com), '/')
+#all.com <- sweep(all.com, 1, rowSums(all.com), '/')
 ```
 
 ```{r}
@@ -99,11 +99,22 @@ write.table(env$lat, "~/GitHub/DormancyDecay/model/EmpiricalDataForModeling/PCA-
 ```{r}
 # Taxonomic Distances Among Ponds
 act.bray.dist <- 1 - vegdist(act.com, method="bray", binary=F)
+#act.bray.dist <- act.bray.dist/max(act.bray.dist)
+
 all.bray.dist <- 1 - vegdist(all.com, method="bray", binary=F)
+#all.bray.dist <- all.bray.dist/max(all.bray.dist)
+
 act.sore.dist <- 1 - vegdist(act.com, method="bray", binary=T)
+#act.sore.dist <- act.sore.dist/max(act.sore.dist)
+
 all.sore.dist <- 1 - vegdist(all.com, method="bray", binary=T)
+#all.sore.dist <- all.sore.dist/max(all.sore.dist)
+
 act.canb.dist <- 1 - vegdist(act.com, method="canberra", binary=F)
+#act.canb.dist <- act.canb.dist/max(act.canb.dist)
+
 all.canb.dist <- 1 - vegdist(all.com, method="canberra", binary=F)
+#all.canb.dist <- all.canb.dist/max(all.canb.dist)
 ```
 
 
