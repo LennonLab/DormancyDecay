@@ -2,21 +2,19 @@ from __future__ import division
 import  matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import sys
+#import sys
 from os.path import expanduser
-import statsmodels.api as sm
+#import statsmodels.api as sm
 
 
 def xfrm(X, _max): return _max-np.array(X)
 
 def figplot(dat, y, x, seed, xlab, ylab, fig, fit, n):
 
-    fitline = False
-    b = 2000
-    ci = 99
-    fr, fs, sz = 0.25, 6, 5
+    fs, sz = 8, 2
     a = 1.0
 
+    e = max(seed)
     dat = dat.tolist()
     y = y.tolist()
     x = x.tolist()
@@ -30,15 +28,15 @@ def figplot(dat, y, x, seed, xlab, ylab, fig, fit, n):
         for i, val in enumerate(dat):
             sd = seed[i]
             clr = str()
-            if sd <= 1: clr = 'darkred'
-            elif sd < 1.5: clr = 'red'
-            elif sd < 2: clr = 'orange'
-            elif sd < 2.5: clr = 'yellow'
-            elif sd < 3: clr = 'lawngreen'
-            elif sd < 3.5: clr = 'green'
-            elif sd < 4: clr = 'deepskyblue'
-            elif sd < 4.5: clr = 'blue'
-            elif sd < 5: clr = 'blueviolet'
+            if sd <= e*0.1: clr = 'darkred'
+            elif sd < e*0.2: clr = 'red'
+            elif sd < e*0.3: clr = 'orange'
+            elif sd < e*0.4: clr = 'yellow'
+            elif sd < e*0.5: clr = 'lawngreen'
+            elif sd < e*0.6: clr = 'green'
+            elif sd < e*0.7: clr = 'deepskyblue'
+            elif sd < e*0.8: clr = 'blue'
+            elif sd < e*0.9: clr = 'blueviolet'
             else: clr = 'purple'
             clrs.append(clr)
 
@@ -46,23 +44,27 @@ def figplot(dat, y, x, seed, xlab, ylab, fig, fit, n):
         for i, val in enumerate(dat):
             sd = seed[i]
             clr = str()
-            if sd <= 2: clr = 'darkred'
-            elif sd < 2.4: clr = 'red'
-            elif sd < 2.8: clr = 'orange'
-            elif sd < 3.2: clr = 'yellow'
-            elif sd < 3.6: clr = 'lawngreen'
-            elif sd < 4.0: clr = 'green'
-            elif sd < 4.4: clr = 'deepskyblue'
-            elif sd < 4.8: clr = 'blue'
-            elif sd < 5: clr = 'blueviolet'
+            if sd <= e*0.1: clr = 'darkred'
+            elif sd < e*0.2: clr = 'red'
+            elif sd < e*0.3: clr = 'orange'
+            elif sd < e*0.4: clr = 'yellow'
+            elif sd < e*0.5: clr = 'lawngreen'
+            elif sd < e*0.6: clr = 'green'
+            elif sd < e*0.7: clr = 'deepskyblue'
+            elif sd < e*0.8: clr = 'blue'
+            elif sd < e*0.9: clr = 'blueviolet'
             else: clr = 'purple'
             clrs.append(clr)
 
-    #if xlab == 'dormant death': x = np.log10(x)
+    #if xlab == 'Dormant death': x = np.array(x)**5
     plt.scatter(x, y, s = sz, c=clrs, linewidths=0.0, alpha=a, edgecolor=None)
 
     '''
     if fitline:
+        fr = 0.25
+        fitline = False
+        b = 2000
+        ci = 99
         x1, y1 = (np.array(t) for t in zip(*sorted(zip(x, y))))
 
         Xi = xfrm(x1, max(x1))
@@ -77,8 +79,13 @@ def figplot(dat, y, x, seed, xlab, ylab, fig, fit, n):
         plt.plot(x1, y1, lw=0.5, color='k')
     '''
 
-    plt.xlabel(xlab, fontsize=fs)
-    plt.ylabel(ylab, fontsize=fs)
+    #if xlab == 'Active dispersal' or xlab == 'Dormant dispersal': 
+    #    plt.xscale('log')
+    #    plt.xlim(min(x),1)
+    
+    #plt.ylim(min(y), max(y))
+    plt.xlabel(xlab, fontsize=fs+2)
+    plt.ylabel(ylab, fontsize=fs+2)
     plt.tick_params(axis='both', labelsize=fs)
 
     return fig
@@ -87,14 +94,19 @@ def figplot(dat, y, x, seed, xlab, ylab, fig, fit, n):
 
 def figfunction(met2, allfig=False, fitfig=True):
 
-    ws, hs = 0.45, 0.5
+    ws, hs = 0.4, 0.4
     met = 'm'
     mydir = expanduser("~/GitHub/DistDecay")
 
     if allfig:
         fit = 0
+        #df = pd.read_csv(mydir+'/model/ModelData/saved/modelresults_nodispersal.txt')
         df = pd.read_csv(mydir+'/model/ModelData/modelresults.txt')
+        #print 'shape', df.shape
         df = df[df['fit'] == 0]
+        #print df.shape
+        #sys.exit()
+        
         fig = plt.figure()
         #plt.style.use('classic')
 
@@ -102,17 +114,17 @@ def figfunction(met2, allfig=False, fitfig=True):
         elif met2 == 'pdif': ylab = 'Percent difference'
         elif met2 == 'adif': ylab = 'Difference'
 
-        xlab = 'environmental filtering'
+        xlab = 'Environmental filtering'
         fig = figplot(df['fit'], df[met+'-mean-Bray-'+met2], df['env_r'], df['env_r'], xlab, ylab, fig, fit, 1)
 
-        xlab = 'dormant death'
+        xlab = 'Dormant death'
         fig = figplot(df['fit'], df[met+'-mean-Bray-'+met2], df['dded'], df['env_r'], xlab, ylab, fig, fit, 2)
 
         
-        xlab = 'active spatial dispersal'
+        xlab = 'Active dispersal'
         fig = figplot(df['fit'], df[met+'-mean-Bray-'+met2], df['ad_s'], df['env_r'], xlab, ylab, fig, fit, 3)
 
-        xlab = 'dormant spatial dispersal'
+        xlab = 'Dormant dispersal'
         fig = figplot(df['fit'], df[met+'-mean-Bray-'+met2], df['dd_s'], df['env_r'], xlab, ylab, fig, fit, 4)
         
 
@@ -125,17 +137,17 @@ def figfunction(met2, allfig=False, fitfig=True):
 
         fig = plt.figure()
 
-        xlab = 'environmental filtering'
+        xlab = 'Environmental filtering'
         fig = figplot(df['fit'], df[met+'-mean-Dice-'+met2], df['env_r'], df['env_r'], xlab, ylab, fig, fit, 1)
 
-        xlab = 'dormant death'
+        xlab = 'Dormant death'
         fig = figplot(df['fit'], df[met+'-mean-Dice-'+met2], df['dded'], df['env_r'], xlab, ylab, fig, fit, 2)
 
         
-        xlab = 'active spatial dispersal'
+        xlab = 'Active dispersal'
         fig = figplot(df['fit'], df[met+'-mean-Dice-'+met2], df['ad_s'], df['env_r'], xlab, ylab, fig, fit, 3)
 
-        xlab = 'dormant spatial dispersal'
+        xlab = 'Dormant dispersal'
         fig = figplot(df['fit'], df[met+'-mean-Dice-'+met2], df['dd_s'], df['env_r'], xlab, ylab, fig, fit, 4)
         
 
@@ -149,17 +161,17 @@ def figfunction(met2, allfig=False, fitfig=True):
 
         fig = plt.figure()
 
-        xlab = 'environmental filtering'
+        xlab = 'Environmental filtering'
         fig = figplot(df['fit'], df[met+'-mean-Canb-'+met2], df['env_r'], df['env_r'], xlab, ylab, fig, fit, 1)
 
-        xlab = 'dormant death'
+        xlab = 'Dormant death'
         fig = figplot(df['fit'], df[met+'-mean-Canb-'+met2], df['dded'], df['env_r'], xlab, ylab, fig, fit, 2)
         
         
-        xlab = 'active spatial dispersal'
+        xlab = 'Active dispersal'
         fig = figplot(df['fit'], df[met+'-mean-Canb-'+met2], df['ad_s'], df['env_r'], xlab, ylab, fig, fit, 3)
 
-        xlab = 'dormant spatial dispersal'
+        xlab = 'Dormant dispersal'
         fig = figplot(df['fit'], df[met+'-mean-Canb-'+met2], df['dd_s'], df['env_r'], xlab, ylab, fig, fit, 4)
         
 
@@ -181,17 +193,17 @@ def figfunction(met2, allfig=False, fitfig=True):
         elif met2 == 'pdif': ylab = 'Percent difference'
         elif met2 == 'adif': ylab = 'Difference'
 
-        xlab = 'environmental filtering'
+        xlab = 'Environmental filtering'
         fig = figplot(df['fit'], df[met+'-mean-Bray-'+met2], df['env_r'], df['env_r'], xlab, ylab, fig, fit, 1)
 
-        xlab = 'dormant death'
+        xlab = 'Dormant death'
         fig = figplot(df['fit'], df[met+'-mean-Bray-'+met2], df['dded'], df['env_r'], xlab, ylab, fig, fit, 2)
 
         
-        xlab = 'active spatial dispersal'
+        xlab = 'Active dispersal'
         fig = figplot(df['fit'], df[met+'-mean-Bray-'+met2], df['ad_s'], df['env_r'], xlab, ylab, fig, fit, 3)
 
-        xlab = 'dormant spatial dispersal'
+        xlab = 'Dormant dispersal'
         fig = figplot(df['fit'], df[met+'-mean-Bray-'+met2], df['dd_s'], df['env_r'], xlab, ylab, fig, fit, 4)
         
         
@@ -204,17 +216,17 @@ def figfunction(met2, allfig=False, fitfig=True):
 
         fig = plt.figure()
 
-        xlab = 'environmental filtering'
+        xlab = 'Environmental filtering'
         fig = figplot(df['fit'], df[met+'-mean-Dice-'+met2], df['env_r'], df['env_r'], xlab, ylab, fig, fit, 1)
 
-        xlab = 'dormant death'
+        xlab = 'Dormant death'
         fig = figplot(df['fit'], df[met+'-mean-Dice-'+met2], df['dded'], df['env_r'], xlab, ylab, fig, fit, 2)
         
         
-        xlab = 'active spatial dispersal'
+        xlab = 'Active dispersal'
         fig = figplot(df['fit'], df[met+'-mean-Dice-'+met2], df['ad_s'], df['env_r'], xlab, ylab, fig, fit, 3)
 
-        xlab = 'dormant spatial dispersal'
+        xlab = 'Dormant dispersal'
         fig = figplot(df['fit'], df[met+'-mean-Dice-'+met2], df['dd_s'], df['env_r'], xlab, ylab, fig, fit, 4)
         
 
@@ -228,17 +240,17 @@ def figfunction(met2, allfig=False, fitfig=True):
 
         fig = plt.figure()
 
-        xlab = 'environmental filtering'
+        xlab = 'Environmental filtering'
         fig = figplot(df['fit'], df[met+'-mean-Canb-'+met2], df['env_r'], df['env_r'], xlab, ylab, fig, fit, 1)
 
-        xlab = 'dormant death'
+        xlab = 'Dormant death'
         fig = figplot(df['fit'], df[met+'-mean-Canb-'+met2], df['dded'], df['env_r'], xlab, ylab, fig, fit, 2)
 
         
-        xlab = 'active spatial dispersal'
+        xlab = 'Active dispersal'
         fig = figplot(df['fit'], df[met+'-mean-Canb-'+met2], df['ad_s'], df['env_r'], xlab, ylab, fig, fit, 3)
 
-        xlab = 'dormant spatial dispersal'
+        xlab = 'Dormant dispersal'
         fig = figplot(df['fit'], df[met+'-mean-Canb-'+met2], df['dd_s'], df['env_r'], xlab, ylab, fig, fit, 4)
         
         
