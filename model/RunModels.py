@@ -1,6 +1,5 @@
 from __future__ import division
 import numpy as np
-from scipy import stats
 from numpy.random import uniform
 from numpy import where
 from scipy import spatial, stats
@@ -11,7 +10,9 @@ from math import radians, cos, sin, asin, sqrt
 
 mydir = os.path.expanduser('~/GitHub/DistDecay/model/')
 sys.path.append(mydir)
-from bide2 import bide
+from bide import bide
+
+
 
 
 def haversine(lon1, lat1, lon2, lat2):
@@ -37,7 +38,6 @@ def difff(obs, exp):
     obs = np.abs(obs)
     exp = np.abs(exp)
     p_dif = 100 * np.abs(obs-exp)/np.abs(np.mean([obs, exp]))
-
     p_err = 100 * np.abs(obs-exp)/np.abs(exp)
 
     return p_err, p_dif, a_dif
@@ -59,16 +59,6 @@ def getXY(S):
     -86.30795, -86.28058, -86.29511, -86.32757, -86.34250, -86.29811, -86.29333,
     -86.28442, -86.28608, -86.29753, -86.28333, -86.28623, -86.28867, -86.28670,
     -86.29028]
-
-    # setup Lambert Conformal basemap
-    #m = Basemap(width=30000, height=30000, projection='lcc',
-    #    lat_0 = np.mean(lats), lon_0 = np.mean(lons))
-    #xpt,ypt = m(lons,lats)
-    #xpt = np.tile(np.array([xpt]).transpose(), (1, S))
-    #ypt = np.tile(np.array([ypt]).transpose(), (1, S))
-    
-    lons = np.tile(np.array([lons]).transpose(), (1, S))
-    lats = np.tile(np.array([lats]).transpose(), (1, S))
     
     return lons, lats
 
@@ -95,7 +85,7 @@ def getEnv(S):
 
 
 
-col_headers = 'Sim,S,Sall,Sact,dd_r,ad_r,dd_s,ad_s,dded,'
+col_headers = 'Sim,S,Sall,Sact,dd_s,ad_s,dded,'
 col_headers += 'minAct,avgAct,maxAct,minAll,avgAll,maxAll,'
 
 col_headers += 'm-mean-Bray-perr,b-mean-Bray-perr,t-mean-Bray-perr,'
@@ -124,27 +114,29 @@ OUT.close()
 
 Tfit1 = 0
 ints = True
-slopes = 'all'
-env_max = 5
+slopes = 'notall'
+env_max = 8
 for i1 in range(0, 100000):
 
     dd_s = uniform(0, 1)
     ad_s = uniform(0, 1)
-    dd_r = uniform(0, 1)
-    ad_r = uniform(0, 1)
     dded = uniform(0, 1)
 
-    S = 10000
-    xs, ys, = getXY(S)
+    S = 20000
+    xs, ys = getXY(S)
     pca = getEnv(S)
 
     env_r = uniform(0, env_max)
-    env = uniform(np.amin(pca) * 2, 2 * np.amax(pca), S)
+    
+    env = uniform(np.amin(pca) * env_r, env_r * np.amax(pca), S)
     env = np.array([env,] * 49)
 
-    Act, Dor, avgMatch = bide(env, pca, xs, ys, S, dd_r, ad_r, dd_s, ad_s, dded, env_r)
+    Act, Dor, avgMatch = bide(env, pca, xs, ys, S, dd_s, ad_s, dded)
     All = Dor + Act
-
+    
+    xs = np.tile(np.array([xs]).transpose(), (1, S))
+    ys = np.tile(np.array([ys]).transpose(), (1, S))
+    
     r1list = where(~Act.any(axis=0))[0]
     r1list = r1list.tolist()
     r2list = where(~All.any(axis=0))[0]
@@ -169,7 +161,7 @@ for i1 in range(0, 100000):
 
     pca = np.delete(pca, rlist, 0)
     pca = np.delete(pca, clist, 1)
-
+    
 
     n = pca.shape[0]
     if n < 10 or pca.shape[1] < 10: continue
@@ -211,25 +203,26 @@ for i1 in range(0, 100000):
         for k in range(j+1, n):
             
             sadr = np.asarray([Act[j], Act[k]])
-            sadr = np.delete(sadr, np.where(~sadr.any(axis=0))[0], axis=1)
+            #sadr = np.delete(sadr, np.where(~sadr.any(axis=0))[0], axis=1)
             sad1 = sadr[0]
             sad2 = sadr[1]
             l = len(sad1)
-
-            pair = np.asarray([sad1, sad2])
+            
+            sadr = np.asarray([All[j], All[k]])
+            #sadr = np.delete(sadr, np.where(~sadr.any(axis=0))[0], axis=1)
+            sad3 = sadr[0]
+            sad4 = sadr[1]
+            
+            pair = [sad1, sad2]
             sim1 = 1 - spatial.distance.pdist(pair, metric='braycurtis')[0]
             sim3 = 1 - spatial.distance.pdist(pair, metric='dice')[0]
             sim5 = 1 - spatial.distance.pdist(pair, metric='canberra')[0]/l
             
-            sadr = np.asarray([All[j], All[k]])
-            sadr = np.delete(sadr, np.where(~sadr.any(axis=0))[0], axis=1)
-            sad3 = sadr[0]
-            sad4 = sadr[1]
-
-            pair = np.asarray([sad3, sad4])
+            pair = [sad3, sad4]
             sim2 = 1 - spatial.distance.pdist(pair, metric='braycurtis')[0]
             sim4 = 1 - spatial.distance.pdist(pair, metric='dice')[0]
             sim6 = 1 - spatial.distance.pdist(pair, metric='canberra')[0]/l
+            
             
             actdif1.append(sim1)
             alldif1.append(sim2)
@@ -238,6 +231,7 @@ for i1 in range(0, 100000):
             actdif3.append(sim5)
             alldif3.append(sim6)
 
+            
             x1 = xs[j][0]
             x2 = xs[k][0]
             y1 = ys[j][0]
@@ -375,7 +369,7 @@ for i1 in range(0, 100000):
         slopetotmean2 = round(np.mean([e_actslope2, e_allslope2]), 5)
         slopetotmean3 = round(np.mean([e_actslope3, e_allslope3]), 5)
 
-    outlist = [i1, S, Sall, Sact, dd_r, ad_r, dd_s, ad_s, dded, minAct, avgAct, maxAct, minAll, avgAll, maxAll]
+    outlist = [i1, S, Sall, Sact, dd_s, ad_s, dded, minAct, avgAct, maxAct, minAll, avgAll, maxAll]
     outlist.extend([slopetotmean1, inttotmean1, totmean1])
     outlist.extend([slopetotmean2, inttotmean2, totmean2])
     outlist.extend([slopetotmean3, inttotmean3, totmean3])
@@ -498,13 +492,15 @@ for i1 in range(0, 100000):
     if fits.count(False) == 0:
         fit = 1
         Tfit1 += 1
+    else:
+        fit = 0
 
 
     outlist.extend([slopetotmean1, inttotmean1, totmean1])
     outlist.extend([slopetotmean2, inttotmean2, totmean2])
     outlist.extend([slopetotmean3, inttotmean3, totmean3])
     outlist.extend([EnvAct_slope3,EnvAll_slope3,GeoAct_slope3,GeoAll_slope3])
-    outlist.extend([env_max - env_r, avgMatch, fit])
+    outlist.extend([env_r, avgMatch, fit])
     outlist = str(outlist).strip('[]')
     outlist = outlist.replace(" ", "")
 
