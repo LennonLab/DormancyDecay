@@ -1,4 +1,4 @@
-# DormancyDecay: Biogeographic implications of dormancy
+DormancyDecay: Biogeographic implications of dormancy
 ==========
 
 This repository contains open-source code, data, & text files for the Dormancy Decay Project.
